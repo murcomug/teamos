@@ -8,6 +8,7 @@ import TaskEditModal from "../components/shared/TaskEditModal";
 import { useMemberSession } from "@/lib/MemberSessionContext";
 
 const quickPrompts = [
+  "Create a task",
   "Create a support ticket",
   "What's overdue today?",
   "Show me my workload",
@@ -91,7 +92,7 @@ export default function MemberChatContent() {
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
 
-    const prompt = `You are TeamOS AI assistant helping a team member. This member can only see their own tasks and create support tickets.
+    const prompt = `You are TeamOS AI assistant helping a team member. This member can only see their own tasks and create tasks/support tickets.
 
 **WORK ITEM TYPES:**
 - **Tasks**: Operational work assigned to this member
@@ -110,23 +111,46 @@ TODAY: ${new Date().toISOString().split("T")[0]}
 User (${memberSession?.name}, ${memberSession?.department}): ${text}
 
 RESPONSE RULES:
-1. **If creating a SUPPORT TICKET**: respond with JSON on a new line:
+1. **CATEGORIZATION - Determine if the user wants a TASK or SUPPORT TICKET:**
+   - Use SUPPORT_TICKET_CREATE for: "ticket", "support", "issue", "problem", "bug", "complaint", "error", "defect"
+   - Use TASK_CREATE for: "task", "work item", "project", "assignment", or operational work
+   - When in doubt, prioritize based on keywords and context
+
+2. **If creating a TASK**: respond with JSON on a new line:
+TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}
+
+3. **If creating a SUPPORT TICKET**: respond with JSON on a new line:
 SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}
 
-2. **If user asks to view/list their tasks** (keywords: "show", "list", "open", "pending", etc.):
+4. **If user asks to view/list their tasks** (keywords: "show", "list", "open", "pending", etc.):
    - Filter their tasks and return matching IDs with TASK_LIST:[id1,id2,id3]
+   - Do NOT list task details in the text - let the cards display them
    - Example: "Here are your open tasks:\n\nTASK_LIST:[abc,def]"
 
-3. Format response in markdown. Be concise and helpful.
-4. Only show data related to THIS member's tasks and department.
-5. Politely refuse requests for company-wide stats or other members' data.`;
+5. Format response in markdown. Be concise and helpful.
+6. Only show data related to THIS member's tasks and department.
+7. Politely refuse requests for company-wide stats or other members' data.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
     let content = response;
     let createdTask = null;
 
-    if (typeof content === "string" && content.includes("SUPPORT_TICKET_CREATE:")) {
+    if (typeof content === "string" && content.includes("TASK_CREATE:")) {
+      const parts = content.split("TASK_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const taskData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdTask = await base44.entities.Task.create(taskData);
+        setTasks((prev) => [createdTask, ...prev]);
+        content += "\n\n✅ Task created successfully!";
+      } catch (e) {
+        content += "\n\n⚠️ Could not auto-create the task. Please create it manually.";
+      }
+    } else if (typeof content === "string" && content.includes("SUPPORT_TICKET_CREATE:")) {
       const parts = content.split("SUPPORT_TICKET_CREATE:");
       content = parts[0].trim();
       try {
@@ -138,7 +162,7 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
         setTasks((prev) => [createdTask, ...prev]);
         content += "\n\n✅ Support ticket created successfully!";
       } catch (e) {
-        content += "\n\n⚠️ Could not auto-create the ticket. Please try again.";
+        content += "\n\n⚠️ Could not auto-create the support ticket. Please create it manually.";
       }
     }
 
