@@ -125,7 +125,10 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
       const parts = content.split("TASK_LIST:");
       content = parts[0].trim();
       try {
-        const ids = JSON.parse(parts[1].trim());
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const bracketMatch = raw.match(/\[[\s\S]*?\]/);
+        const ids = JSON.parse(bracketMatch ? bracketMatch[0] : raw);
         listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
       } catch (e) {}
     }
@@ -176,7 +179,7 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
                   </ReactMarkdown>
                 )}
               </div>
-              {msg.tasks?.map((task, i) => (
+              {msg.tasks && msg.tasks.length > 0 && msg.tasks.map((task, i) => task && (
                 <div key={task.id} className="flex items-start gap-2 mt-2">
                   <span className="text-xs font-mono text-muted-foreground mt-4 w-5 text-right flex-shrink-0">{i + 1}.</span>
                   <div className="flex-1">
