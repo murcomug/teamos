@@ -101,21 +101,21 @@ export default function MessageBubble({ message }) {
   return (
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center mt-0.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+        <div className="h-7 w-7 rounded-lg bg-primary/20 flex items-center justify-center mt-0.5">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
         </div>
       )}
       <div className={cn("max-w-[85%]", isUser && "flex flex-col items-end")}>
         {message.content && (
           <div className={cn(
             "rounded-2xl px-4 py-2.5",
-            isUser ? "bg-slate-800 text-white" : "bg-white border border-slate-200"
+            isUser ? "bg-slate-800 text-white" : "bg-primary/10 border border-primary/30 text-foreground"
           )}>
             {isUser ? (
               <p className="text-sm leading-relaxed">{message.content}</p>
             ) : (
               <ReactMarkdown 
-                className="text-sm prose prose-sm prose-slate max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                className="text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_a]:text-primary [&_a]:hover:underline"
                 components={{
                   code: ({ inline, className, children, ...props }) => {
                     const match = /language-(\w+)/.exec(className || '');
@@ -137,13 +137,13 @@ export default function MessageBubble({ message }) {
                         </Button>
                       </div>
                     ) : (
-                      <code className="px-1 py-0.5 rounded bg-slate-100 text-slate-700 text-xs">
+                      <code className="px-1 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">
                         {children}
                       </code>
                     );
                   },
                   a: ({ children, ...props }) => (
-                    <a {...props} target="_blank" rel="noopener noreferrer">{children}</a>
+                    <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{children}</a>
                   ),
                   p: ({ children }) => <p className="my-1 leading-relaxed">{children}</p>,
                   ul: ({ children }) => <ul className="my-1 ml-4 list-disc">{children}</ul>,
@@ -153,7 +153,7 @@ export default function MessageBubble({ message }) {
                   h2: ({ children }) => <h2 className="text-base font-semibold my-2">{children}</h2>,
                   h3: ({ children }) => <h3 className="text-sm font-semibold my-2">{children}</h3>,
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-slate-300 pl-3 my-2 text-slate-600">
+                    <blockquote className="border-l-2 border-primary/30 pl-3 my-2 text-foreground/70">
                       {children}
                     </blockquote>
                   ),
