@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { LogOut, CheckSquare, Clock, AlertCircle, Users, Building2, BarChart2, MessageSquare } from "lucide-react";
+import { LogOut, CheckSquare, Clock, AlertCircle, Users, Building2, BarChart2, MessageSquare, Edit3 } from "lucide-react";
 import moment from "moment";
 import ChangePasswordModal from "../components/shared/ChangePasswordModal";
+import EditMemberContactModal from "../components/shared/EditMemberContactModal";
+import { Button } from "@/components/ui/button";
 import PriorityBadge from "../components/shared/PriorityBadge";
 import StatusBadge from "../components/shared/StatusBadge";
 import UserAvatar from "../components/shared/UserAvatar";
@@ -12,6 +14,7 @@ export default function MemberPortal() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [editContact, setEditContact] = useState(false);
 
   const isAdmin = member?.role === "admin";
   const isOperator = member?.role === "operator";
@@ -42,6 +45,13 @@ export default function MemberPortal() {
     window.location.href = "/member-login";
   };
 
+  const handleSaveContact = async (contactData) => {
+    await base44.entities.TeamMember.update(member.id, contactData);
+    const updated = { ...member, ...contactData };
+    setMember(updated);
+    localStorage.setItem("memberSession", JSON.stringify(updated));
+  };
+
   if (!member) return null;
 
   const openTasks = tasks.filter(t => t.status !== "completed");
@@ -63,8 +73,12 @@ export default function MemberPortal() {
             <p className="text-sm font-medium text-foreground">{member.name}</p>
             <p className="text-xs text-muted-foreground">{member.department}</p>
           </div>
-          <button onClick={handleLogout}
+          <button onClick={() => setEditContact(true)}
             className="ml-2 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-white/[0.06] transition-all">
+            <Edit3 className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-white/[0.06] transition-all">
             <LogOut className="h-3.5 w-3.5" />
             Logout
           </button>
@@ -165,6 +179,13 @@ export default function MemberPortal() {
         open={showChangePassword}
         memberId={member.id}
         onSuccess={() => setShowChangePassword(false)}
+      />
+
+      <EditMemberContactModal
+        open={editContact}
+        onClose={() => setEditContact(false)}
+        member={member}
+        onSave={handleSaveContact}
       />
     </div>
   );

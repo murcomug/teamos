@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Search, Mail, Settings2, Trash2 } from "lucide-react";
+import { Plus, Search, Mail, Settings2, Trash2, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import UserAvatar from "../components/shared/UserAvatar";
 import PhoneInput from "../components/shared/PhoneInput";
 import PermissionsEditor from "../components/shared/PermissionsEditor";
+import EditMemberContactModal from "../components/shared/EditMemberContactModal";
 
 export default function Team() {
   const [members, setMembers] = useState([]);
@@ -18,6 +19,7 @@ export default function Team() {
   const [deptFilter, setDeptFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [editMember, setEditMember] = useState(null);
+  const [editContact, setEditContact] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "operator" });
   const [formPerms, setFormPerms] = useState([]);
 
@@ -69,6 +71,11 @@ export default function Team() {
     const updated = await base44.entities.TeamMember.update(editMember.id, { permissions: formPerms });
     setMembers(members.map((m) => (m.id === editMember.id ? { ...m, permissions: formPerms } : m)));
     setEditMember(null);
+  };
+
+  const handleSaveContact = async (contactData) => {
+    await base44.entities.TeamMember.update(editContact.id, contactData);
+    setMembers(members.map((m) => (m.id === editContact.id ? { ...m, ...contactData } : m)));
   };
 
   const openPermissions = (member) => {
@@ -145,6 +152,9 @@ export default function Team() {
               {member.status === "active" ? "Active" : "Away"}
             </span>
             <div className="flex items-center gap-1">
+              <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Contact Info">
+                <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
               <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
               </a>
@@ -175,6 +185,9 @@ export default function Team() {
                 <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 </a>
+                <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                  <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
                 <button onClick={() => openPermissions(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
@@ -277,6 +290,14 @@ export default function Team() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Contact Info Modal */}
+      <EditMemberContactModal
+        open={!!editContact}
+        onClose={() => setEditContact(null)}
+        member={editContact}
+        onSave={handleSaveContact}
+      />
     </div>
   );
 }
