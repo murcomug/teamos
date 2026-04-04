@@ -117,7 +117,10 @@ export default function SupportTickets() {
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Support Tickets</h1>
           <p className="text-sm text-muted-foreground mt-1">{supportTickets.length} tickets</p>
         </div>
-        <Button onClick={() => { setEditTask({}); }}
+        <Button onClick={() => {
+          const dueDate = new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0];
+          setEditTask({ due_date: dueDate });
+        }}
           className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
           <Plus className="h-4 w-4 mr-2" /> New Ticket
         </Button>
