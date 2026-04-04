@@ -170,13 +170,17 @@ export default function MemberLogin() {
 }
 
 function MemberPortalView({ member, tasks, sidebarOpen, setSidebarOpen, onLogout }) {
-  const isAdmin = member?.role === "admin";
+  const hasPermission = (perm) => member?.permissions?.includes(perm);
+  
   const openTasks = tasks.filter(t => t.status !== "completed");
   const completedTasks = tasks.filter(t => t.status === "completed");
   const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== "completed");
 
   const navLinks = [
     { label: "My Tasks", href: "#tasks", icon: CheckSquare },
+    ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/team", icon: CheckSquare }] : []),
+    ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/departments", icon: CheckSquare }] : []),
+    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/reports", icon: CheckSquare }] : []),
   ];
 
   return (
@@ -192,11 +196,11 @@ function MemberPortalView({ member, tasks, sidebarOpen, setSidebarOpen, onLogout
         </div>
         
         <nav className="p-4 space-y-2">
-          {navLinks.map(({ label, href, icon: Icon }) => (
+          {navLinks.map(({ label, href, icon: IconComponent }) => (
             <a key={label} href={href}
               className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all"
               onClick={() => setSidebarOpen(false)}>
-              <Icon className="h-4 w-4" />
+              <IconComponent className="h-4 w-4" />
               {label}
             </a>
           ))}
