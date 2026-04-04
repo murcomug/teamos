@@ -101,7 +101,11 @@ RESPONSE RULES:
 TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
 3. If creating a SUPPORT TICKET (customer support, issue report): respond with JSON on a new line:
 SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
-4. If listing/showing tasks (open, overdue, by status, etc.): ALWAYS end with TASK_LIST:[ID1,ID2,ID3,...] using task IDs from above. Never describe task details in text.
+4. If listing/showing tasks (any query about viewing, showing, listing tasks - like "show all open tasks", "what's pending", "overdue", "by status", etc.):
+   - Filter tasks based on the user's criteria (status, assignee, department, etc.)
+   - Provide a brief summary sentence
+   - ALWAYS end with: TASK_LIST:[ID1,ID2,ID3,...] on a new line using the filtered task IDs
+   - Do NOT describe individual task details in text when showing lists
 5. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
