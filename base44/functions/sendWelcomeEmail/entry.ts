@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "TeamOS <onboarding@resend.dev>",
+        from: "TeamOS <noreply@murcom.co>",
         to: [data.email],
         subject: `Welcome to TeamOS, ${data.name}!`,
         html: `
