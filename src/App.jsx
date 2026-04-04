@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { MemberSessionProvider } from '@/lib/MemberSessionContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import AgentChat from './pages/AgentChat';
@@ -66,20 +67,22 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <Routes>
-            <Route path="/member-login" element={<MemberLogin />} />
-            <Route path="/member-portal" element={<MemberLogin />} />
-            <Route path="/member-chat" element={<MemberChat />} />
-            <Route path="/member-team" element={<MemberTeam />} />
-            <Route path="/member-departments" element={<MemberDepartments />} />
-            <Route path="/member-reports" element={<MemberReports />} />
-            <Route path="*" element={<AuthenticatedApp />} />
-          </Routes>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <MemberSessionProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <Routes>
+              <Route path="/member-login" element={<MemberLogin />} />
+              <Route path="/member-portal" element={<MemberLogin />} />
+              <Route path="/member-chat" element={<MemberChat />} />
+              <Route path="/member-team" element={<MemberTeam />} />
+              <Route path="/member-departments" element={<MemberDepartments />} />
+              <Route path="/member-reports" element={<MemberReports />} />
+              <Route path="*" element={<AuthenticatedApp />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </MemberSessionProvider>
     </AuthProvider>
   )
 }

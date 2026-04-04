@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useMemberSession } from "@/lib/MemberSessionContext";
 import ReactMarkdown from "react-markdown";
 import { Loader2, Menu, X, LogOut } from "lucide-react";
 import MentionInput from "../components/chat/MentionInput";
@@ -16,11 +17,7 @@ const quickPrompts = [
 
 export default function MemberChat() {
   const navigate = useNavigate();
-
-  // Validate member session
-  const memberSession = (() => {
-    try { return JSON.parse(localStorage.getItem("memberSession") || "null"); } catch { return null; }
-  })();
+  const { memberSession } = useMemberSession();
 
   useEffect(() => {
     if (!memberSession) {
@@ -95,7 +92,6 @@ export default function MemberChat() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("memberSession");
     navigate("/member-login");
   };
 

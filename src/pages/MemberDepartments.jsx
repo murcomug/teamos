@@ -1,29 +1,23 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useMemberSession } from "@/lib/MemberSessionContext";
 import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function MemberDepartments() {
-  const [member, setMember] = useState(null);
+  const navigate = useNavigate();
+  const { memberSession } = useMemberSession();
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = localStorage.getItem("memberSession");
-    if (!session) {
-      window.location.href = "/member-login";
+    if (!memberSession) {
+      navigate("/member-login");
       return;
     }
-
-    try {
-      const parsed = JSON.parse(session);
-      setMember(parsed);
-      loadDepartments();
-    } catch (err) {
-      localStorage.removeItem("memberSession");
-      window.location.href = "/member-login";
-    }
-  }, []);
+    loadDepartments();
+  }, [memberSession, navigate]);
 
   const loadDepartments = async () => {
     try {
@@ -36,7 +30,7 @@ export default function MemberDepartments() {
     }
   };
 
-  if (!member) {
+  if (!memberSession) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0a0f" }}>
         <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
