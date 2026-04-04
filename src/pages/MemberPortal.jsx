@@ -20,24 +20,35 @@ export default function MemberPortal() {
   const isOperator = member?.role === "operator";
 
   useEffect(() => {
-    const session = localStorage.getItem("memberSession");
-    if (!session) {
-      window.location.href = "/member-login";
-      return;
-    }
+    const loadPortal = async () => {
+      try {
+        const session = localStorage.getItem("memberSession");
+        if (!session) {
+          window.location.href = "/member-login";
+          return;
+        }
 
-    const parsed = JSON.parse(session);
-    setMember(parsed);
+        const parsed = JSON.parse(session);
+        setMember(parsed);
 
-    if (parsed.must_change_password) {
-      setShowChangePassword(true);
-    }
+        if (parsed.must_change_password) {
+          setShowChangePassword(true);
+        }
 
-    // Fetch tasks assigned to this member
-    base44.entities.Task.filter({ assignee: parsed.name }).then((t) => {
-      setTasks(t);
-      setLoading(false);
-    });
+        // Fetch tasks assigned to this member
+        const tasks = await base44.entities.Task.filter({ assignee: parsed.name });
+        setTasks(tasks || []);
+      } catch (error) {
+        console.error("Error loading portal:", error);
+        // Redirect to login on error
+        localStorage.removeItem("memberSession");
+        window.location.href = "/member-login";
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPortal();
   }, []);
 
   const handleLogout = () => {
@@ -52,7 +63,21 @@ export default function MemberPortal() {
     localStorage.setItem("memberSession", JSON.stringify(updated));
   };
 
-  if (!member) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0a0f" }}>
+        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!member) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0a0f" }}>
+        <p className="text-muted-foreground">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   const openTasks = tasks.filter(t => t.status !== "completed");
   const completedTasks = tasks.filter(t => t.status === "completed");

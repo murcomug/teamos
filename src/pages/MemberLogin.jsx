@@ -17,21 +17,33 @@ export default function MemberLogin() {
     setLoading(true);
     setError("");
 
-    const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "login", email, password }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", email, password }),
+      });
 
-    if (data?.success) {
-      localStorage.setItem("memberSession", JSON.stringify(data.member));
-      window.location.href = "/member-portal";
-    } else {
-      setError(data?.error || "Login failed. Please try again.");
+      if (!res.ok) {
+        setError(`Network error: ${res.status}`);
+        setLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data?.success && data.member) {
+        localStorage.setItem("memberSession", JSON.stringify(data.member));
+        window.location.href = "/member-portal";
+      } else {
+        setError(data?.error || "Login failed. Please try again.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("Connection error. Please check your internet and try again.");
+      console.error("Login error:", err);
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
