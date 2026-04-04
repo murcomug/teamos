@@ -17,6 +17,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
+  const [sortPriority, setSortPriority] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
 
@@ -62,11 +63,17 @@ export default function Tasks() {
     }
   };
 
-  const filtered = tasks.filter((t) =>
-    t.title?.toLowerCase().includes(search.toLowerCase()) ||
-    t.assignee?.toLowerCase().includes(search.toLowerCase()) ||
-    t.department?.toLowerCase().includes(search.toLowerCase())
-  );
+  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  const filtered = tasks
+    .filter((t) =>
+      t.title?.toLowerCase().includes(search.toLowerCase()) ||
+      t.assignee?.toLowerCase().includes(search.toLowerCase()) ||
+      t.department?.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => sortPriority
+      ? (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99)
+      : 0
+    );
 
   if (loading) {
     return (
@@ -102,6 +109,17 @@ export default function Tasks() {
             className="w-full h-9 pl-10 pr-4 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-all"
           />
         </div>
+        {view === "list" && (
+          <button
+            onClick={() => setSortPriority(!sortPriority)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              sortPriority
+                ? "bg-primary/15 text-primary border-primary/30"
+                : "bg-white/[0.04] border-white/[0.06] text-muted-foreground hover:text-foreground"
+            }`}>
+            Sort by Priority
+          </button>
+        )}
         <div className="flex items-center bg-white/[0.04] rounded-lg border border-white/[0.06] p-0.5">
           <button onClick={() => setView("list")}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
