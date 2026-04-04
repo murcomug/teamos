@@ -109,6 +109,11 @@ DEPARTMENTS: ${deptSummary}
 TODAY: ${new Date().toISOString().split("T")[0]}
 ${scopeNote}
 
+TASK STATUS DEFINITIONS:
+- "open" or "active" tasks = status is pending OR ongoing
+- "completed" tasks = status is completed
+- "stopped" tasks = status is stopped
+
 User request: ${text}
 
 RESPONSE RULES:
