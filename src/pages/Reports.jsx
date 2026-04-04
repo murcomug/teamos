@@ -47,14 +47,16 @@ export default function Reports() {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) {
       return (
-        <div className="glass-card rounded-lg px-3 py-2 text-xs">
-          <p className="text-foreground font-medium">{label}</p>
-          <p className="text-primary font-mono">{payload[0].value}</p>
+        <div style={{ background: "#1a1a28", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px" }}>
+          <p style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{label || payload[0].name}</p>
+          <p style={{ color: "#2dd4bf", fontSize: 13, fontFamily: "monospace", fontWeight: 700 }}>{payload[0].value}</p>
         </div>
       );
     }
     return null;
   };
+
+  const tickStyle = { fill: "#94a3b8", fontSize: 12, fontWeight: 500 };
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -69,9 +71,9 @@ export default function Reports() {
           <h3 className="text-sm font-semibold text-foreground mb-4">Tasks by Status</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={statusData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
-              <YAxis tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
+              <YAxis tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="count" fill="hsl(174, 72%, 50%)" radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -84,7 +86,14 @@ export default function Reports() {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={priorityData} cx="50%" cy="50%" innerRadius={60} outerRadius={100}
-                paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                paddingAngle={4} dataKey="value"
+                label={({ name, value, cx, x, y }) => (
+                  <text x={x} y={y} fill="#cbd5e1" fontSize={12} fontWeight={500} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central">
+                    {`${name}: ${value}`}
+                  </text>
+                )}
+                labelLine={{ stroke: "rgba(255,255,255,0.2)" }}
+              >
                 {priorityData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i]} />
                 ))}
@@ -99,9 +108,9 @@ export default function Reports() {
           <h3 className="text-sm font-semibold text-foreground mb-4">Department Workload</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={deptData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis type="number" tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
-              <YAxis dataKey="name" type="category" width={100} tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis type="number" tick={tickStyle} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis dataKey="name" type="category" width={110} tick={tickStyle} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="tasks" fill="hsl(174, 72%, 50%)" radius={[0, 6, 6, 0]} />
             </BarChart>
