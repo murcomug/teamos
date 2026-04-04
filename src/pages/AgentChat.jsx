@@ -19,11 +19,14 @@ export default function AgentChat() {
     try { return JSON.parse(localStorage.getItem("memberSession") || "null"); } catch { return null; }
   })();
   const canCompanyWideReports = !memberSession || (memberSession.permissions || []).includes("company_wide_reports");
+  const userId = memberSession?.id || "admin"; // Use member ID or 'admin' for auth users
+  const messageCacheKey = `agentChatMessages_${userId}`;
+  const dateCacheKey = `agentChatDate_${userId}`;
 
   const [messages, setMessages] = useState(() => {
     const today = new Date().toISOString().split('T')[0];
-    const stored = localStorage.getItem("agentChatMessages");
-    const storedDate = localStorage.getItem("agentChatDate");
+    const stored = localStorage.getItem(messageCacheKey);
+    const storedDate = localStorage.getItem(dateCacheKey);
     
     if (stored && storedDate === today) {
       try {
@@ -45,9 +48,9 @@ export default function AgentChat() {
   // Save messages to localStorage whenever they change
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    localStorage.setItem("agentChatMessages", JSON.stringify(messages));
-    localStorage.setItem("agentChatDate", today);
-  }, [messages]);
+    localStorage.setItem(messageCacheKey, JSON.stringify(messages));
+    localStorage.setItem(dateCacheKey, today);
+  }, [messages, messageCacheKey, dateCacheKey]);
 
   useEffect(() => {
     Promise.all([
