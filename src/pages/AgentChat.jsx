@@ -92,10 +92,11 @@ ${scopeNote}
 
 User request: ${text}
 
-Respond helpfully. If the user wants to create a task, respond with the task details in this JSON format at the end of your message on a new line:
+RESPONSE RULES:
+1. If creating a task: respond with task details in JSON format on a new line:
 TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
-
-If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at the end of your message (using the task IDs from above) instead of listing them in text. Format your response in markdown. Be concise and professional.`;
+2. If listing/showing tasks (open, overdue, by status, by department, etc.): ALWAYS end with TASK_LIST:[ID1,ID2,ID3,...] using task IDs from above. Never describe task details in text.
+3. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
