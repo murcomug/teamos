@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
 import { Loader2, ShieldCheck } from "lucide-react";
 
 export default function ChangePasswordModal({ open, memberId, onSuccess }) {
@@ -26,16 +26,21 @@ export default function ChangePasswordModal({ open, memberId, onSuccess }) {
     }
 
     setLoading(true);
-    const res = await base44.functions.invoke("teamMemberAuth", { action: "changePassword", memberId, newPassword });
+    const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "changePassword", memberId, newPassword }),
+    });
+    const data = await res.json();
 
-    if (res.data?.success) {
+    if (data?.success) {
       // Update localStorage session
       const session = JSON.parse(localStorage.getItem("memberSession") || "{}");
       session.must_change_password = false;
       localStorage.setItem("memberSession", JSON.stringify(session));
       onSuccess();
     } else {
-      setError(res.data?.error || "Failed to update password.");
+      setError(data?.error || "Failed to update password.");
     }
 
     setLoading(false);

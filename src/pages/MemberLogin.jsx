@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
 import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +16,12 @@ export default function MemberLogin() {
     setLoading(true);
     setError("");
 
-    const res = await base44.functions.invoke("teamMemberAuth", { action: "login", email, password });
-    const data = res.data;
+    const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "login", email, password }),
+    });
+    const data = await res.json();
 
     if (data?.success) {
       localStorage.setItem("memberSession", JSON.stringify(data.member));
