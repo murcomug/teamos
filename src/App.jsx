@@ -18,6 +18,7 @@ import Settings from './pages/Settings';
 import CompletedItems from './pages/CompletedItems';
 import ActivityLog from './pages/ActivityLog';
 import MemberLogin from './pages/MemberLogin';
+import MemberChat from './pages/MemberChat';
 import MemberTeam from './pages/MemberTeam';
 import MemberDepartments from './pages/MemberDepartments';
 import MemberReports from './pages/MemberReports';
@@ -70,6 +71,7 @@ function App() {
           <Routes>
             <Route path="/member-login" element={<MemberLogin />} />
             <Route path="/member-portal" element={<MemberLogin />} />
+            <Route path="/member-chat" element={<MemberChat />} />
             <Route path="/member-team" element={<MemberTeam />} />
             <Route path="/member-departments" element={<MemberDepartments />} />
             <Route path="/member-reports" element={<MemberReports />} />
