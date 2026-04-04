@@ -216,6 +216,10 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
       } catch (e) {
         console.error("Failed to parse TASK_LIST:", e);
       }
+      
+      if (listedTasks.length === 0) {
+        content += "\n\n*No open tasks match that request.*";
+      }
     }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
