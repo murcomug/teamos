@@ -85,6 +85,10 @@ export default function MemberChatContent() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
+    // Extract @ mentions from message
+    const mentionMatch = text.match(/@([\w\s]+)/g);
+    const mentionedName = mentionMatch ? mentionMatch[0].substring(1).trim() : null;
+
     const deptTasks = tasks.filter(t => t.department === memberSession?.department);
     const taskSummary = deptTasks.slice(0, 30).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
@@ -161,7 +165,8 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
         const jsonMatch = raw.match(/\{[\s\S]*?\}/);
         const ticketData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-        createdTask = await base44.entities.Task.create({ ...ticketData, is_support_ticket: true });
+        const assignee = mentionedName || ticketData.assignee;
+        createdTask = await base44.entities.Task.create({ ...ticketData, is_support_ticket: true, assignee });
         setTasks((prev) => [createdTask, ...prev]);
         content += "\n\n✅ Support ticket created successfully!";
       } catch (e) {
