@@ -79,7 +79,7 @@ User request: ${text}
 Respond helpfully. If the user wants to create a task, respond with the task details in this JSON format at the end of your message on a new line:
 TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
 
-If showing task lists, reference tasks by their titles. Format your response in markdown. Be concise and professional.`;
+If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at the end of your message (using the task IDs from above) instead of listing them in text. Format your response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
@@ -99,15 +99,25 @@ If showing task lists, reference tasks by their titles. Format your response in 
       }
     }
 
-    // Find mentioned tasks to render as cards
-    const mentionedTasks = tasks.filter(t => content.includes(t.title));
+    // Find task list from TASK_LIST command
+    let listedTasks = [];
+    if (typeof content === "string" && content.includes("TASK_LIST:")) {
+      const parts = content.split("TASK_LIST:");
+      content = parts[0].trim();
+      try {
+        const ids = JSON.parse(parts[1].trim());
+        listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+      } catch (e) {}
+    }
+
+    const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
 
     setMessages((prev) => [
       ...prev,
       {
         role: "assistant",
         content,
-        tasks: createdTask ? [createdTask, ...mentionedTasks] : mentionedTasks.length > 0 ? mentionedTasks : undefined,
+        tasks: taskCards.length > 0 ? taskCards : undefined,
       },
     ]);
     setLoading(false);
@@ -151,9 +161,14 @@ If showing task lists, reference tasks by their titles. Format your response in 
                   </ReactMarkdown>
                 )}
               </div>
-              {msg.tasks?.map((task) => (
-                <ChatTaskCard key={task.id} task={task} members={members}
-                  onStatusChange={handleStatusChange} onEdit={setEditTask} />
+              {msg.tasks?.map((task, i) => (
+                <div key={task.id} className="flex items-start gap-2 mt-2">
+                  <span className="text-xs font-mono text-muted-foreground mt-4 w-5 text-right flex-shrink-0">{i + 1}.</span>
+                  <div className="flex-1">
+                    <ChatTaskCard task={task} members={members}
+                      onStatusChange={handleStatusChange} onEdit={setEditTask} />
+                  </div>
+                </div>
               ))}
             </div>
           </div>
