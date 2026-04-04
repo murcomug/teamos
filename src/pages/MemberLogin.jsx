@@ -42,15 +42,19 @@ export default function MemberLogin() {
     setPortalLoading(false);
   }, []);
 
-  const loadTasks = async (memberData) => {
+  const loadTasks = async (memberData, retries = 3, delay = 500) => {
     try {
       const memberTasks = await base44.entities.Task.filter({ assignee: memberData.name });
       setTasks(memberTasks || []);
     } catch (err) {
       console.error("Error loading tasks:", err);
+      if (err?.message?.includes('rate limit') && retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return loadTasks(memberData, retries - 1, delay * 2);
+      }
       setTasks([]);
       if (err?.message?.includes('rate limit')) {
-        setError('System is busy. Your tasks will load when ready.');
+        setError('System is busy. Please try again in a moment.');
       }
     }
   };
