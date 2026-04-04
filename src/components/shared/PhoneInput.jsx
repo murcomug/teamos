@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 
 const COUNTRY_CODES = [
@@ -199,9 +198,8 @@ const COUNTRY_CODES = [
 ];
 
 export default function PhoneInput({ value = "", onChange, className = "" }) {
-  // Parse existing value into countryCode + number
   const parseValue = (val) => {
-    if (!val) return { countryCode: "+254", number: "" }; // default Kenya
+    if (!val) return { countryCode: "+254", number: "" };
     const match = COUNTRY_CODES.find((c) => val.startsWith(c.code));
     if (match) return { countryCode: match.code, number: val.slice(match.code.length).trim() };
     return { countryCode: "+254", number: val };
@@ -210,45 +208,95 @@ export default function PhoneInput({ value = "", onChange, className = "" }) {
   const parsed = parseValue(value);
   const [countryCode, setCountryCode] = useState(parsed.countryCode);
   const [number, setNumber] = useState(parsed.number);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = COUNTRY_CODES.filter(
+    (c) =>
+      c.country.toLowerCase().includes(search.toLowerCase()) ||
+      c.code.includes(search)
+  );
 
   const handleCodeChange = (code) => {
     setCountryCode(code);
     onChange(`${code}${number}`);
+    setOpen(false);
+    setSearch("");
   };
 
   const handleNumberChange = (e) => {
     let n = e.target.value.replace(/[^0-9\s\-]/g, "");
-    // Strip leading zero
     n = n.replace(/^0+/, "");
     setNumber(n);
     onChange(`${countryCode}${n}`);
   };
 
+  const selected = COUNTRY_CODES.find((c) => c.code === countryCode);
+
   return (
     <div className={`flex gap-2 ${className}`}>
-      <Select value={countryCode} onValueChange={handleCodeChange}>
-        <SelectTrigger className="w-32 bg-white/[0.04] border-white/[0.08] text-foreground flex-shrink-0">
-          <SelectValue>
-            {(() => {
-              const c = COUNTRY_CODES.find((c) => c.code === countryCode);
-              return c ? `${c.flag} ${c.code}` : countryCode;
-            })()}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="bg-[#1a1a24] border-white/[0.08] max-h-64 overflow-y-auto">
-          {COUNTRY_CODES.map((c, i) => (
-            <SelectItem key={`${c.code}-${c.country}-${i}`} value={c.code} className="text-foreground text-sm">
-              {c.flag} {c.country} ({c.code})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Input
+      <div className="relative w-36 flex-shrink-0" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => { setOpen(!open); setSearch(""); }}
+          className="w-full h-9 flex items-center justify-between px-3 rounded-md bg-white/[0.04] border border-white/[0.08] text-foreground text-sm"
+        >
+          <span>{selected ? `${selected.flag} ${selected.code}` : countryCode}</span>
+          <svg className="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        </button>
+        {open && (
+          <div className="absolute z-50 mt-1 w-64 rounded-md bg-[#1a1a24] border border-white/[0.08] shadow-lg">
+            <div className="p-2">
+              <input
+                autoFocus
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search country..."
+                className="w-full h-8 px-3 rounded-md bg-white/[0.06] border border-white/[0.08] text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+              />
+            </div>
+            <div className="max-h-52 overflow-y-auto scrollbar-thin">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-2 text-xs text-muted-foreground">No results</div>
+              ) : (
+                filtered.map((c, i) => (
+                  <button
+                    key={`${c.code}-${c.country}-${i}`}
+                    type="button"
+                    onClick={() => handleCodeChange(c.code)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-white/[0.06] transition-colors ${
+                      c.code === countryCode && c.country === selected?.country ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    <span>{c.flag}</span>
+                    <span className="flex-1 truncate">{c.country}</span>
+                    <span className="text-muted-foreground font-mono text-xs">{c.code}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <input
         type="tel"
         value={number}
         onChange={handleNumberChange}
         placeholder="Phone number"
-        className="flex-1 bg-white/[0.04] border-white/[0.08] text-foreground"
+        className="flex-1 h-9 px-3 rounded-md bg-white/[0.04] border border-white/[0.08] text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-all"
       />
     </div>
   );
