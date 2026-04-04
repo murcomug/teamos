@@ -222,7 +222,7 @@ export default function SupportTickets() {
           filtered.map((task) => {
             const showCloseBtn = view === "active";
             return (
-              <div key={task.id} className="flex items-center gap-3 py-3 px-4 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors min-w-full">
+              <div key={task.id} className="flex items-center gap-3 py-3 px-4 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors min-w-full cursor-pointer" onClick={() => setEditTask(task)}>
                 <div className="flex-1 min-w-[250px] min-w-0">
                   <h4 className="text-sm font-medium text-foreground truncate">{task.title}</h4>
                   {task.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{task.description}</p>}

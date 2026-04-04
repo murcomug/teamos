@@ -229,8 +229,10 @@ export default function Tasks() {
            </div>
            <div className="min-w-full">
              {filtered.map((task) => (
-               <TaskListRow key={task.id} task={task} members={members} allTasks={tasks} isTableRow={true}
-                 onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
+               <div key={task.id} className="cursor-pointer" onClick={() => setEditTask(task)}>
+                 <TaskListRow task={task} members={members} allTasks={tasks} isTableRow={true}
+                   onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
+               </div>
              ))}
            </div>
          </div>

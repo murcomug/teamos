@@ -156,7 +156,7 @@ export default function MemberTasks() {
             const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "completed";
             const isOwner = task.assignee === memberSession?.name;
             return (
-              <div key={task.id} className="glass-card glass-card-hover rounded-xl p-4 transition-all">
+              <div key={task.id} className="glass-card glass-card-hover rounded-xl p-4 transition-all cursor-pointer" onClick={() => setEditTask(task)}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-foreground truncate">{task.title}</h3>
@@ -224,7 +224,7 @@ export default function MemberTasks() {
              const isOverdue = ticket.due_date && new Date(ticket.due_date) < new Date() && ticket.status !== "completed";
              const isOwner = ticket.assignee === memberSession?.name;
              return (
-               <div key={ticket.id} className="glass-card glass-card-hover rounded-xl p-4 transition-all border-l-2 border-orange-500/50">
+               <div key={ticket.id} className="glass-card glass-card-hover rounded-xl p-4 transition-all border-l-2 border-orange-500/50 cursor-pointer" onClick={() => setEditTask(ticket)}>
                  <div className="flex items-start justify-between gap-4">
                    <div className="flex-1 min-w-0">
                      <h3 className="text-sm font-semibold text-foreground truncate">{ticket.title}</h3>
