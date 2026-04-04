@@ -17,7 +17,10 @@ export default function MemberCompletedItems() {
     const loadData = async () => {
       try {
         const tasks = await base44.entities.Task.list();
-        const completed = (tasks || []).filter(t => t.status === "completed");
+        const completed = (tasks || []).filter(t => 
+          t.status === "completed" && 
+          (t.assignee === memberSession.name || t.department === memberSession.department)
+        );
         setCompletedTasks(completed);
       } catch (err) {
         console.error("Error loading completed tasks:", err);
@@ -43,8 +46,9 @@ export default function MemberCompletedItems() {
   }, [memberSession]);
 
   const filteredTasks = completedTasks.filter(t =>
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    (t.assignee === memberSession?.name || t.department === memberSession?.department) &&
+    (t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
