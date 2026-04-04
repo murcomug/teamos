@@ -11,6 +11,7 @@ import PhoneInput from "../components/shared/PhoneInput";
 import PermissionsEditor from "../components/shared/PermissionsEditor";
 import EditMemberContactModal from "../components/shared/EditMemberContactModal";
 import ResetPasswordModal from "../components/shared/ResetPasswordModal";
+import ConfirmDialog from "../components/shared/ConfirmDialog";
 
 export default function Team() {
   const [members, setMembers] = useState([]);
@@ -24,6 +25,7 @@ export default function Team() {
   const [resetPassword, setResetPassword] = useState(null);
   const [tempPassword, setTempPassword] = useState("");
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "operator" });
   const [formPerms, setFormPerms] = useState([]);
 
@@ -96,6 +98,7 @@ export default function Team() {
       const response = await base44.functions.invoke('resetTeamMemberPassword', { memberId: member.id });
       setResetPassword(member);
       setTempPassword(response.data.tempPassword);
+      setConfirmReset(null);
     } catch (error) {
       console.error('Error resetting password:', error);
       alert('Failed to reset password');
@@ -176,7 +179,7 @@ export default function Team() {
               <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Contact Info">
                 <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
-              <button onClick={() => { if (confirm(`Reset password for ${member.name}? They will be required to change it on first login.`)) handleResetPassword(member); }} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Reset Password">
+              <button onClick={() => setConfirmReset(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Reset Password">
                 <Lock className="h-3.5 w-3.5 text-amber-400" />
               </button>
               <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
@@ -209,7 +212,7 @@ export default function Team() {
                 <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
-                <button onClick={() => { if (confirm(`Reset password for ${member.name}? They will be required to change it on first login.`)) handleResetPassword(member); }} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                <button onClick={() => setConfirmReset(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Lock className="h-3.5 w-3.5 text-amber-400" />
                 </button>
                 <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
@@ -332,6 +335,16 @@ export default function Team() {
         onClose={() => { setResetPassword(null); setTempPassword(""); }}
         member={resetPassword}
         tempPassword={tempPassword}
+        loading={resettingPassword}
+      />
+
+      {/* Reset Password Confirmation */}
+      <ConfirmDialog
+        open={!!confirmReset}
+        onClose={() => setConfirmReset(null)}
+        title="Reset Password"
+        message={`Reset password for ${confirmReset?.name}? They will be required to change it on their first login.`}
+        onConfirm={() => handleResetPassword(confirmReset)}
         loading={resettingPassword}
       />
     </div>
