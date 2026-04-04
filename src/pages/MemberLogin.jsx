@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { appParams } from "@/lib/app-params";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Lock, Eye, EyeOff, Menu, X, Edit3, LogOut, CheckSquare, Clock, AlertCircle } from "lucide-react";
+import { Loader2, Lock, Eye, EyeOff, Menu, X, Edit3, LogOut, CheckSquare, Clock, AlertCircle, Users, Building2, BarChart2, MessageSquare } from "lucide-react";
+import { Link } from "react-router-dom";
 import moment from "moment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,9 +179,10 @@ function MemberPortalView({ member, tasks, sidebarOpen, setSidebarOpen, onLogout
 
   const navLinks = [
     { label: "My Tasks", href: "#tasks", icon: CheckSquare },
-    ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: CheckSquare }] : []),
-    ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: CheckSquare }] : []),
-    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/member-reports", icon: CheckSquare }] : []),
+    { label: "Agent Chat", href: "/chat", icon: MessageSquare },
+    ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: Users }] : []),
+    ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: Building2 }] : []),
+    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/member-reports", icon: BarChart2 }] : []),
   ];
 
   return (
@@ -196,14 +198,26 @@ function MemberPortalView({ member, tasks, sidebarOpen, setSidebarOpen, onLogout
         </div>
         
         <nav className="p-4 space-y-2">
-          {navLinks.map(({ label, href, icon: IconComponent }) => (
-            <a key={label} href={href}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all"
-              onClick={() => setSidebarOpen(false)}>
-              <IconComponent className="h-4 w-4" />
-              {label}
-            </a>
-          ))}
+          {navLinks.map(({ label, href, icon: IconComponent }) => {
+            if (href.startsWith('#')) {
+              return (
+                <a key={label} href={href}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all"
+                  onClick={() => setSidebarOpen(false)}>
+                  <IconComponent className="h-4 w-4" />
+                  {label}
+                </a>
+              );
+            }
+            return (
+              <Link key={label} to={href}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all"
+                onClick={() => setSidebarOpen(false)}>
+                <IconComponent className="h-4 w-4" />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
       </aside>
 
