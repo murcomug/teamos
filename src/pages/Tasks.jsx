@@ -15,7 +15,7 @@ export default function Tasks() {
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState("kanban");
+  const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
   const [editTask, setEditTask] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -103,13 +103,13 @@ export default function Tasks() {
           />
         </div>
         <div className="flex items-center bg-white/[0.04] rounded-lg border border-white/[0.06] p-0.5">
-          <button onClick={() => setView("kanban")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </button>
           <button onClick={() => setView("list")}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
             <List className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => setView("kanban")}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "kanban" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            <LayoutGrid className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
