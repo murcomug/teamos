@@ -7,11 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaskEditModal from "../components/shared/TaskEditModal";
 
+const DEFAULT_DEPARTMENTS = [
+  { name: "Finance", icon: "💰", head: "" },
+  { name: "Operations", icon: "⚙️", head: "" },
+  { name: "Management", icon: "🏢", head: "" },
+  { name: "IT", icon: "💻", head: "" },
+  { name: "Customer Care", icon: "🎧", head: "" },
+  { name: "Marketing", icon: "📣", head: "" },
+];
+
 export default function Departments() {
   const [departments, setDepartments] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dupError, setDupError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [quickTask, setQuickTask] = useState(null);
   const [form, setForm] = useState({ name: "", icon: "", head: "" });
@@ -21,8 +31,18 @@ export default function Departments() {
       base44.entities.Department.list(),
       base44.entities.Task.list(),
       base44.entities.TeamMember.list(),
-    ]).then(([d, t, m]) => {
-      setDepartments(d);
+    ]).then(async ([d, t, m]) => {
+      // Seed default departments if they don't exist
+      const existingNames = d.map((x) => x.name.toLowerCase());
+      const toCreate = DEFAULT_DEPARTMENTS.filter(
+        (def) => !existingNames.includes(def.name.toLowerCase())
+      );
+      let allDepts = d;
+      if (toCreate.length > 0) {
+        const created = await base44.entities.Department.bulkCreate(toCreate);
+        allDepts = [...d, ...created];
+      }
+      setDepartments(allDepts);
       setTasks(t);
       setMembers(m);
       setLoading(false);
@@ -30,10 +50,18 @@ export default function Departments() {
   }, []);
 
   const handleAddDept = async () => {
+    const isDuplicate = departments.some(
+      (d) => d.name.toLowerCase() === form.name.trim().toLowerCase()
+    );
+    if (isDuplicate) {
+      setDupError(`"${form.name}" already exists.`);
+      return;
+    }
     const created = await base44.entities.Department.create(form);
     setDepartments([created, ...departments]);
     setShowAdd(false);
     setForm({ name: "", icon: "", head: "" });
+    setDupError("");
   };
 
   const handleQuickTask = async (data) => {
@@ -111,7 +139,7 @@ export default function Departments() {
       </div>
 
       {/* Add Department Modal */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); setDupError(""); }}>
         <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="text-foreground">Add Department</DialogTitle>
@@ -119,8 +147,9 @@ export default function Departments() {
           <div className="space-y-4 mt-2">
             <div>
               <Label className="text-muted-foreground text-xs">Name</Label>
-              <Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})}
+              <Input value={form.name} onChange={(e) => { setForm({...form, name: e.target.value}); setDupError(""); }}
                 className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+              {dupError && <p className="text-xs text-red-400 mt-1">{dupError}</p>}
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Icon (emoji)</Label>
