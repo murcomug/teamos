@@ -33,7 +33,19 @@ export default function Tasks() {
     });
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    const unsubscribe = base44.entities.Task.subscribe((event) => {
+      if (event.type === "create") {
+        setTasks((prev) => [event.data, ...prev]);
+      } else if (event.type === "update") {
+        setTasks((prev) => prev.map((t) => t.id === event.id ? event.data : t));
+      } else if (event.type === "delete") {
+        setTasks((prev) => prev.filter((t) => t.id !== event.id));
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const handleStatusChange = async (id, status) => {
     await base44.entities.Task.update(id, { status });
