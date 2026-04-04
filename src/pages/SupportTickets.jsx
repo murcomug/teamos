@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TaskCard from "../components/tasks/TaskCard";
 import TaskListRow from "../components/tasks/TaskListRow";
 import TaskEditModal from "../components/shared/TaskEditModal";
+import TicketCloseModal from "../components/shared/TicketCloseModal";
 
 const columns = ["pending", "ongoing", "stopped", "completed"];
 const columnLabels = { pending: "Pending", ongoing: "Ongoing", stopped: "Stopped", completed: "Completed" };
@@ -18,6 +18,8 @@ export default function SupportTickets() {
   const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
   const [editTask, setEditTask] = useState(null);
+  const [closeTicket, setCloseTicket] = useState(null);
+  const [completedTab, setCompletedTab] = useState("all");
 
   const loadData = () => {
     Promise.all([
@@ -68,9 +70,22 @@ export default function SupportTickets() {
     }
   };
 
+  const handleCloseTicket = async (data) => {
+    if (closeTicket?.id) {
+      await base44.entities.Task.update(closeTicket.id, data);
+      setTasks(tasks.map((t) => (t.id === closeTicket.id ? { ...t, ...data } : t)));
+    }
+  };
+
   // Filter only support tickets
   const supportTickets = tasks.filter((t) => t.is_support_ticket);
-  const filtered = supportTickets.filter((t) =>
+  const activeTickets = supportTickets.filter((t) => t.status !== "completed");
+  const completedTickets = supportTickets.filter((t) => t.status === "completed");
+  const resolvedTickets = completedTickets.filter((t) => t.resolution_status === "resolved");
+  const unresolvedTickets = completedTickets.filter((t) => t.resolution_status === "unresolved");
+  
+  const displayTickets = completedTab === "all" ? completedTickets : completedTab === "resolved" ? resolvedTickets : unresolvedTickets;
+  const filtered = (view === "completed" ? displayTickets : activeTickets).filter((t) =>
     t.title?.toLowerCase().includes(search.toLowerCase()) ||
     t.assignee?.toLowerCase().includes(search.toLowerCase())
   );
@@ -96,6 +111,64 @@ export default function SupportTickets() {
         </Button>
       </div>
 
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setView("active")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            view === "active"
+              ? "bg-primary/15 text-primary"
+              : "bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Active ({activeTickets.length})
+        </button>
+        <button
+          onClick={() => setView("completed")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            view === "completed"
+              ? "bg-primary/15 text-primary"
+              : "bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Completed ({completedTickets.length})
+        </button>
+      </div>
+
+      {view === "completed" && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCompletedTab("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              completedTab === "all"
+                ? "bg-primary/15 text-primary"
+                : "bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All ({completedTickets.length})
+          </button>
+          <button
+            onClick={() => setCompletedTab("resolved")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              completedTab === "resolved"
+                ? "bg-emerald-500/15 text-emerald-400"
+                : "bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Resolved ({resolvedTickets.length})
+          </button>
+          <button
+            onClick={() => setCompletedTab("unresolved")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              completedTab === "unresolved"
+                ? "bg-amber-500/15 text-amber-400"
+                : "bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Unresolved ({unresolvedTickets.length})
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -120,13 +193,31 @@ export default function SupportTickets() {
           <div className="w-12"></div>
         </div>
         {filtered.length > 0 ? (
-          filtered.map((task) => (
-            <TaskListRow key={task.id} task={task} members={members} allTasks={tasks}
-              onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
-          ))
+          filtered.map((task) => {
+            const showCloseBtn = view === "active";
+            return (
+              <div key={task.id} className="flex items-center gap-4 py-3 px-4 rounded-lg hover:bg-white/[0.03] transition-colors group border-b border-white/[0.03] last:border-0">
+                <div className="flex-1">
+                  <TaskListRow task={task} members={members} allTasks={tasks}
+                    onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
+                </div>
+                {showCloseBtn && (
+                  <Button
+                    onClick={() => setCloseTicket(task)}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white ml-2 flex-shrink-0"
+                  >
+                    Close
+                  </Button>
+                )}
+              </div>
+            );
+          })
         ) : (
           <div className="py-8 text-center">
-            <p className="text-sm text-muted-foreground">No support tickets</p>
+            <p className="text-sm text-muted-foreground">
+              {view === "active" ? "No active tickets" : completedTab === "resolved" ? "No resolved tickets" : completedTab === "unresolved" ? "No unresolved tickets" : "No completed tickets"}
+            </p>
           </div>
         )}
       </div>
@@ -140,6 +231,14 @@ export default function SupportTickets() {
         members={members}
         departments={departments}
         allTasks={tasks}
+      />
+
+      {/* Close Ticket Modal */}
+      <TicketCloseModal
+        open={!!closeTicket}
+        onClose={() => setCloseTicket(null)}
+        ticket={closeTicket}
+        onSave={handleCloseTicket}
       />
     </div>
   );

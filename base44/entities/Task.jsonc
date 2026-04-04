@@ -57,6 +57,19 @@
         "type": "string"
       },
       "default": []
+    },
+    "resolution_status": {
+      "type": "string",
+      "title": "Resolution Status",
+      "enum": [
+        "resolved",
+        "unresolved"
+      ],
+      "default": null
+    },
+    "unresolved_reason": {
+      "type": "string",
+      "title": "Reason for Unresolved"
     }
   },
   "required": [
