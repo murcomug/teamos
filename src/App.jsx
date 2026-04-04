@@ -49,8 +49,6 @@ const AuthenticatedApp = () => {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
-      <Route path="/member-login" element={<MemberLogin />} />
-      <Route path="/member-portal" element={<MemberPortal />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
@@ -61,7 +59,11 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <Routes>
+            <Route path="/member-login" element={<MemberLogin />} />
+            <Route path="/member-portal" element={<MemberPortal />} />
+            <Route path="*" element={<AuthenticatedApp />} />
+          </Routes>
         </Router>
         <Toaster />
       </QueryClientProvider>
