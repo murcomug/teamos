@@ -14,6 +14,12 @@ const quickPrompts = [
 ];
 
 export default function AgentChat() {
+  // Read member session for permission-scoped responses
+  const memberSession = (() => {
+    try { return JSON.parse(localStorage.getItem("memberSession") || "null"); } catch { return null; }
+  })();
+  const canCompanyWideReports = !memberSession || (memberSession.permissions || []).includes("company_wide_reports");
+
   const [messages, setMessages] = useState([
     { role: "assistant", content: "👋 Welcome to **TeamOS Agent**. I can help you create tasks, check workloads, manage assignments, and generate reports. Try typing a command or use the quick prompts below." }
   ]);
@@ -57,12 +63,21 @@ export default function AgentChat() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
-    const taskSummary = tasks.slice(0, 20).map(t =>
+    // Scope visible tasks based on permissions
+    const visibleTasks = canCompanyWideReports
+      ? tasks
+      : tasks.filter(t => t.assignee === memberSession?.name || t.department === memberSession?.department);
+
+    const taskSummary = visibleTasks.slice(0, 20).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'}`
     ).join("\n");
 
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
+
+    const scopeNote = canCompanyWideReports
+      ? ""
+      : `\n⚠️ IMPORTANT: This user does NOT have company-wide report access. Only show data related to their own tasks or their department (${memberSession?.department}). Politely refuse requests for company-wide stats or other departments' data.`;
 
     const prompt = `You are TeamOS AI assistant that helps manage team operations. You have access to this data:
 
@@ -73,6 +88,7 @@ TEAM: ${memberSummary}
 DEPARTMENTS: ${deptSummary}
 
 TODAY: ${new Date().toISOString().split("T")[0]}
+${scopeNote}
 
 User request: ${text}
 
@@ -99,7 +115,6 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
       }
     }
 
-    // Find task list from TASK_LIST command
     let listedTasks = [];
     if (typeof content === "string" && content.includes("TASK_LIST:")) {
       const parts = content.split("TASK_LIST:");
@@ -125,7 +140,6 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
 
   return (
     <div className="flex flex-col h-[calc(100vh-112px)] max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Agent Chat</h1>
@@ -133,7 +147,6 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
         </div>
       </div>
 
-      {/* Quick Prompts */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         {quickPrompts.map((prompt) => (
           <button key={prompt} onClick={() => sendMessage(prompt)}
@@ -143,15 +156,12 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
         ))}
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4 pb-4">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] ${msg.role === "user" ? "ml-auto" : ""}`}>
               <div className={`rounded-2xl px-4 py-3 ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "glass-card"
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
               }`}>
                 {msg.role === "user" ? (
                   <p className="text-sm">{msg.content}</p>
@@ -183,7 +193,6 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
         <div ref={scrollRef} />
       </div>
 
-      {/* Input */}
       <div className="pt-4 border-t border-white/[0.06]">
         <MentionInput onSend={sendMessage} members={members} departments={departments} />
       </div>

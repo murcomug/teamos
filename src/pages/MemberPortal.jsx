@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { LogOut, CheckSquare, Clock, AlertCircle } from "lucide-react";
+import { LogOut, CheckSquare, Clock, AlertCircle, Users, Building2, BarChart2, MessageSquare } from "lucide-react";
 import moment from "moment";
 import ChangePasswordModal from "../components/shared/ChangePasswordModal";
 import PriorityBadge from "../components/shared/PriorityBadge";
@@ -12,6 +12,8 @@ export default function MemberPortal() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
+
+  const hasPerm = (key) => (member?.permissions || []).includes(key);
 
   useEffect(() => {
     const session = localStorage.getItem("memberSession");
@@ -70,12 +72,37 @@ export default function MemberPortal() {
 
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">My Tasks</h1>
+          <h1 className="text-2xl font-bold text-foreground">My Portal</h1>
           <p className="text-muted-foreground text-sm mt-1">Welcome back, {member.name}!</p>
         </div>
 
+        {/* Quick nav based on permissions */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <a href="#tasks" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+            <CheckSquare className="h-4 w-4 text-primary" /> My Tasks
+          </a>
+          {hasPerm("view_team") && (
+            <a href="/team" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+              <Users className="h-4 w-4 text-primary" /> Team
+            </a>
+          )}
+          {hasPerm("view_departments") && (
+            <a href="/departments" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+              <Building2 className="h-4 w-4 text-primary" /> Departments
+            </a>
+          )}
+          {hasPerm("view_reports") && (
+            <a href="/reports" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+              <BarChart2 className="h-4 w-4 text-primary" /> Reports
+            </a>
+          )}
+          <a href="/chat" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+            <MessageSquare className="h-4 w-4 text-primary" /> Agent Chat
+          </a>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div id="tasks" className="grid grid-cols-3 gap-4 mb-8">
           {[
             { label: "Open Tasks", value: openTasks.length, icon: CheckSquare, color: "text-primary" },
             { label: "Overdue", value: overdueTasks.length, icon: AlertCircle, color: "text-red-400" },

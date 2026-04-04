@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Search, Mail, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Mail, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserAvatar from "../components/shared/UserAvatar";
 import PhoneInput from "../components/shared/PhoneInput";
+import PermissionsEditor from "../components/shared/PermissionsEditor";
 
 export default function Team() {
   const [members, setMembers] = useState([]);
@@ -16,7 +17,9 @@ export default function Team() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [editMember, setEditMember] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "" });
+  const [formPerms, setFormPerms] = useState([]);
 
   useEffect(() => {
     Promise.all([
@@ -35,10 +38,23 @@ export default function Team() {
       ...form,
       status: "active",
       avatar_color: colors[Math.floor(Math.random() * colors.length)],
+      permissions: formPerms,
     });
     setMembers([created, ...members]);
     setShowAdd(false);
     setForm({ name: "", email: "", whatsapp: "", department: "", role: "" });
+    setFormPerms([]);
+  };
+
+  const handleSavePermissions = async () => {
+    const updated = await base44.entities.TeamMember.update(editMember.id, { permissions: formPerms });
+    setMembers(members.map((m) => (m.id === editMember.id ? { ...m, permissions: formPerms } : m)));
+    setEditMember(null);
+  };
+
+  const openPermissions = (member) => {
+    setEditMember(member);
+    setFormPerms(member.permissions || []);
   };
 
   const filtered = members
@@ -62,7 +78,7 @@ export default function Team() {
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Team</h1>
           <p className="text-sm text-muted-foreground mt-1">{members.length} members across {uniqueDepts.length} departments</p>
         </div>
-        <Button onClick={() => setShowAdd(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
+        <Button onClick={() => { setForm({ name: "", email: "", whatsapp: "", department: "", role: "" }); setFormPerms([]); setShowAdd(true); }} className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
           <Plus className="h-4 w-4 mr-2" /> Add Member
         </Button>
       </div>
@@ -90,7 +106,7 @@ export default function Team() {
 
       {/* Table */}
       <div className="glass-card rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_120px_140px_130px_80px_80px] gap-4 py-2.5 px-5 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="grid grid-cols-[1fr_120px_140px_130px_80px_100px] gap-4 py-2.5 px-5 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           <span>Name</span>
           <span>Role</span>
           <span>Department</span>
@@ -99,7 +115,7 @@ export default function Team() {
           <span>Actions</span>
         </div>
         {filtered.map((member) => (
-          <div key={member.id} className="grid grid-cols-[1fr_120px_140px_130px_80px_80px] gap-4 items-center py-3 px-5 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
+          <div key={member.id} className="grid grid-cols-[1fr_120px_140px_130px_80px_100px] gap-4 items-center py-3 px-5 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
             <div className="flex items-center gap-3 min-w-0">
               <UserAvatar name={member.name} color={member.avatar_color} size="sm" />
               <div className="min-w-0">
@@ -118,8 +134,8 @@ export default function Team() {
               <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
               </a>
-              <button className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
-                <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+              <button onClick={() => openPermissions(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Permissions">
+                <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </div>
           </div>
@@ -128,7 +144,7 @@ export default function Team() {
 
       {/* Add Modal */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-md">
+        <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-foreground">Add Team Member</DialogTitle>
           </DialogHeader>
@@ -167,10 +183,34 @@ export default function Team() {
               <Input value={form.role} onChange={(e) => setForm({...form, role: e.target.value})}
                 className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
             </div>
+            <div>
+              <Label className="text-muted-foreground text-xs mb-2 block">Permissions</Label>
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-3">
+                <PermissionsEditor permissions={formPerms} onChange={setFormPerms} />
+              </div>
+            </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="ghost" onClick={() => setShowAdd(false)} className="text-muted-foreground">Cancel</Button>
               <Button onClick={handleAdd} className="bg-primary text-primary-foreground hover:bg-primary/90">Add Member</Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Modal */}
+      <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
+        <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Permissions — {editMember?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-3">
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-4">
+              <PermissionsEditor permissions={formPerms} onChange={setFormPerms} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="ghost" onClick={() => setEditMember(null)} className="text-muted-foreground">Cancel</Button>
+            <Button onClick={handleSavePermissions} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
           </div>
         </DialogContent>
       </Dialog>
