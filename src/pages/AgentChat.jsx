@@ -118,13 +118,16 @@ RESPONSE RULES:
 
 2. If creating a TASK (operational work): respond with JSON on a new line:
 TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
+
 3. If creating a SUPPORT TICKET (customer support, issue report): respond with JSON on a new line:
 SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
-4. If listing/showing tasks (any query about viewing, showing, listing tasks - like "show all open tasks", "what's pending", "overdue", "by status", etc.):
-   - Filter tasks based on the user's criteria (status, assignee, department, etc.)
-   - Provide a brief summary sentence
-   - ALWAYS end with: TASK_LIST:[ID1,ID2,ID3,...] on a new line using the filtered task IDs
-   - Do NOT describe individual task details in text when showing lists
+
+4. **IF THE USER IS ASKING TO VIEW/LIST/FILTER TASKS** (keywords: "show", "list", "what are", "get", "open", "pending", "overdue", etc.):
+   - Filter the task list based on user criteria
+   - MANDATORY: End response with TASK_LIST:[id1,id2,id3] using matching task IDs
+   - Do NOT list task details in the text - let the cards display them
+   - Example: User: "Show me open tasks" → Your response: "Here are your open tasks:\n\nTASK_LIST:[abc,def,ghi]"
+
 5. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
@@ -171,10 +174,15 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
       try {
         let raw = parts[1].trim();
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
-        const bracketMatch = raw.match(/\[[\s\S]*?\]/);
-        const ids = JSON.parse(bracketMatch ? bracketMatch[0] : raw);
-        listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
-      } catch (e) {}
+        // Extract array from text
+        const bracketMatch = raw.match(/\[[^\]]*\]/);
+        if (bracketMatch) {
+          const ids = JSON.parse(bracketMatch[0]);
+          listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+        }
+      } catch (e) {
+        console.error("Failed to parse TASK_LIST:", e);
+      }
     }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
