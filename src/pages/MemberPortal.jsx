@@ -28,21 +28,30 @@ export default function MemberPortal() {
           return;
         }
 
-        const parsed = JSON.parse(session);
+        let parsed;
+        try {
+          parsed = JSON.parse(session);
+        } catch (parseErr) {
+          // Session is corrupted, clear and redirect
+          localStorage.removeItem("memberSession");
+          window.location.href = "/member-login";
+          return;
+        }
+
         setMember(parsed);
 
         if (parsed.must_change_password) {
           setShowChangePassword(true);
         }
 
-        // Fetch tasks assigned to this member
-        const tasks = await base44.entities.Task.filter({ assignee: parsed.name });
-        setTasks(tasks || []);
-      } catch (error) {
-        console.error("Error loading portal:", error);
-        // Redirect to login on error
-        localStorage.removeItem("memberSession");
-        window.location.href = "/member-login";
+        // Fetch tasks assigned to this member (don't fail login if this fails)
+        try {
+          const tasks = await base44.entities.Task.filter({ assignee: parsed.name });
+          setTasks(tasks || []);
+        } catch (taskErr) {
+          console.error("Error loading tasks:", taskErr);
+          setTasks([]); // Show empty list instead of logging out
+        }
       } finally {
         setLoading(false);
       }
