@@ -41,9 +41,10 @@ export default function MemberTasks() {
     loadData();
   }, [memberSession]);
 
+  const deptTasks = tasks.filter(t => t.department === memberSession?.department && t.status !== "completed");
   const filteredTasks = filterAssignee === "mine" 
-    ? tasks.filter(t => t.assignee === memberSession?.name)
-    : tasks;
+    ? deptTasks.filter(t => t.assignee === memberSession?.name)
+    : deptTasks;
 
   const handleCreateTask = async (form) => {
     try {
@@ -127,7 +128,7 @@ export default function MemberTasks() {
               : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
           }`}
         >
-          All Team Tasks
+          All Dept Tasks
         </button>
       </div>
 
