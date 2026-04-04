@@ -6,6 +6,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "../components/tasks/TaskCard";
 import TaskListRow from "../components/tasks/TaskListRow";
 import TaskEditModal from "../components/shared/TaskEditModal";
+import ConfirmDialog from "../components/shared/ConfirmDialog";
 
 const columns = ["pending", "ongoing", "stopped", "completed"];
 const columnLabels = { pending: "Pending", ongoing: "Ongoing", stopped: "Stopped", completed: "Completed" };
@@ -21,6 +22,7 @@ export default function Tasks() {
   const [sortPriority, setSortPriority] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const loadData = () => {
     Promise.all([
@@ -67,11 +69,16 @@ export default function Tasks() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      const task = tasks.find((t) => t.id === id);
-      await base44.entities.Task.delete(id);
-      setTasks(tasks.filter((t) => t.id !== id));
-      await base44.functions.invoke('logActivity', { action: 'TASK_DELETED', description: `Task "${task?.title}" was deleted`, entity_type: 'Task', entity_id: id });
+    const task = tasks.find((t) => t.id === id);
+    setConfirmDelete({ id, title: task?.title });
+  };
+
+  const confirmTaskDelete = async () => {
+    if (confirmDelete?.id) {
+      await base44.entities.Task.delete(confirmDelete.id);
+      setTasks(tasks.filter((t) => t.id !== confirmDelete.id));
+      await base44.functions.invoke('logActivity', { action: 'TASK_DELETED', description: `Task "${confirmDelete.title}" was deleted`, entity_type: 'Task', entity_id: confirmDelete.id });
+      setConfirmDelete(null);
     }
   };
 
@@ -236,6 +243,17 @@ export default function Tasks() {
         members={members}
         departments={departments}
         allTasks={tasks}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete Task"
+        message={`Delete task "${confirmDelete?.title}"? This action cannot be undone.`}
+        onConfirm={confirmTaskDelete}
+        confirmText="Delete"
+        dangerAction={true}
       />
     </div>
   );

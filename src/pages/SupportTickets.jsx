@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import TaskListRow from "../components/tasks/TaskListRow";
 import TaskEditModal from "../components/shared/TaskEditModal";
 import TicketCloseModal from "../components/shared/TicketCloseModal";
+import ConfirmDialog from "../components/shared/ConfirmDialog";
 
 const columns = ["pending", "ongoing", "stopped", "completed"];
 const columnLabels = { pending: "Pending", ongoing: "Ongoing", stopped: "Stopped", completed: "Completed" };
@@ -20,6 +21,7 @@ export default function SupportTickets() {
   const [editTask, setEditTask] = useState(null);
   const [closeTicket, setCloseTicket] = useState(null);
   const [completedTab, setCompletedTab] = useState("all");
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const loadData = () => {
     Promise.all([
@@ -64,9 +66,15 @@ export default function SupportTickets() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this support ticket?")) {
-      await base44.entities.Task.delete(id);
-      setTasks(tasks.filter((t) => t.id !== id));
+    const task = tasks.find((t) => t.id === id);
+    setConfirmDelete({ id, title: task?.title });
+  };
+
+  const confirmTicketDelete = async () => {
+    if (confirmDelete?.id) {
+      await base44.entities.Task.delete(confirmDelete.id);
+      setTasks(tasks.filter((t) => t.id !== confirmDelete.id));
+      setConfirmDelete(null);
     }
   };
 
@@ -239,6 +247,17 @@ export default function SupportTickets() {
         onClose={() => setCloseTicket(null)}
         ticket={closeTicket}
         onSave={handleCloseTicket}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete Support Ticket"
+        message={`Delete ticket "${confirmDelete?.title}"? This action cannot be undone.`}
+        onConfirm={confirmTicketDelete}
+        confirmText="Delete"
+        dangerAction={true}
       />
     </div>
   );

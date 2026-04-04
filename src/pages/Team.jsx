@@ -26,6 +26,7 @@ export default function Team() {
   const [tempPassword, setTempPassword] = useState("");
   const [resettingPassword, setResettingPassword] = useState(false);
   const [confirmReset, setConfirmReset] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "operator" });
   const [formPerms, setFormPerms] = useState([]);
 
@@ -68,11 +69,16 @@ export default function Team() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this team member?")) {
-      const member = members.find((m) => m.id === id);
-      await base44.entities.TeamMember.delete(id);
-      setMembers(members.filter((m) => m.id !== id));
-      await base44.functions.invoke('logActivity', { action: 'TEAM_MEMBER_DELETED', description: `Team member "${member?.name}" was deleted`, entity_type: 'TeamMember', entity_id: id });
+    const member = members.find((m) => m.id === id);
+    setConfirmDelete({ id, name: member?.name });
+  };
+
+  const confirmMemberDelete = async () => {
+    if (confirmDelete?.id) {
+      await base44.entities.TeamMember.delete(confirmDelete.id);
+      setMembers(members.filter((m) => m.id !== confirmDelete.id));
+      await base44.functions.invoke('logActivity', { action: 'TEAM_MEMBER_DELETED', description: `Team member "${confirmDelete.name}" was deleted`, entity_type: 'TeamMember', entity_id: confirmDelete.id });
+      setConfirmDelete(null);
     }
   };
 
@@ -345,7 +351,20 @@ export default function Team() {
         title="Reset Password"
         message={`Reset password for ${confirmReset?.name}? They will be required to change it on their first login.`}
         onConfirm={() => handleResetPassword(confirmReset)}
+        dangerAction={false}
+        confirmText="Reset Password"
         loading={resettingPassword}
+      />
+
+      {/* Delete Member Confirmation */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete Team Member"
+        message={`Delete ${confirmDelete?.name}? This action cannot be undone.`}
+        onConfirm={confirmMemberDelete}
+        confirmText="Delete"
+        dangerAction={true}
       />
     </div>
   );
