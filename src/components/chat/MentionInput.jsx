@@ -44,9 +44,14 @@ export default function MentionInput({ onSend, members = [], departments = [] })
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey && !showMentions) {
-      e.preventDefault();
-      handleSend();
+    if (e.key === "Enter" && !e.shiftKey) {
+      if (showMentions && suggestions.length > 0) {
+        e.preventDefault();
+        selectMention(suggestions[0]);
+      } else if (!showMentions) {
+        e.preventDefault();
+        handleSend();
+      }
     }
   };
 
