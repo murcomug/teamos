@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
             ${data.role ? `<p><strong>Your role:</strong> ${data.role}</p>` : ""}
             <p>Use the credentials below to log in. Your temporary password expires in <strong>3 days</strong>. You will be prompted to set a new password on first login.</p>
             <div style="background: #1a1a2e; border: 1px solid #2dd4bf33; border-radius: 8px; padding: 20px; margin: 24px 0;">
-              <p style="margin: 4px 0;"><strong>Login page:</strong> <a href="${req.headers.get('origin') || ''}/member-login" style="color: #2dd4bf;">${req.headers.get('origin') || ''}/member-login</a></p>
+              <p style="margin: 4px 0;"><strong>Login page:</strong> <a href="https://benevolent-team-core-flow.base44.app/member-login" style="color: #2dd4bf;">https://benevolent-team-core-flow.base44.app/member-login</a></p>
               <p style="margin: 4px 0;"><strong>Email:</strong> ${data.email}</p>
               <p style="margin: 8px 0 4px;"><strong>Temporary Password:</strong></p>
               <p style="font-family: monospace; font-size: 22px; letter-spacing: 4px; color: #2dd4bf; margin: 8px 0;">${tempPassword}</p>
