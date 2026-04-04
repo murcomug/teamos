@@ -20,15 +20,34 @@ export default function AgentChat() {
   })();
   const canCompanyWideReports = !memberSession || (memberSession.permissions || []).includes("company_wide_reports");
 
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "👋 Welcome to **TeamOS Agent**. I can help you create tasks, check workloads, manage assignments, and generate reports. Try typing a command or use the quick prompts below." }
-  ]);
+  const [messages, setMessages] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const stored = localStorage.getItem("agentChatMessages");
+    const storedDate = localStorage.getItem("agentChatDate");
+    
+    if (stored && storedDate === today) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [{ role: "assistant", content: "👋 Welcome to **TeamOS Agent**. I can help you create tasks, check workloads, manage assignments, and generate reports. Try typing a command or use the quick prompts below." }];
+      }
+    }
+    
+    return [{ role: "assistant", content: "👋 Welcome to **TeamOS Agent**. I can help you create tasks, check workloads, manage assignments, and generate reports. Try typing a command or use the quick prompts below." }];
+  });
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const scrollRef = useRef(null);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem("agentChatMessages", JSON.stringify(messages));
+    localStorage.setItem("agentChatDate", today);
+  }, [messages]);
 
   useEffect(() => {
     Promise.all([
