@@ -24,12 +24,6 @@ export default function MemberLogin() {
         body: JSON.stringify({ action: "login", email, password }),
       });
 
-      if (!res.ok) {
-        setError(`Network error: ${res.status}`);
-        setLoading(false);
-        return;
-      }
-
       const data = await res.json();
 
       if (data?.success && data.member) {
