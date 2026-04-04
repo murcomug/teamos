@@ -176,7 +176,7 @@ export default function Team() {
               <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Contact Info">
                 <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
-              <button onClick={() => handleResetPassword(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Reset Password">
+              <button onClick={() => { if (confirm(`Reset password for ${member.name}? They will be required to change it on first login.`)) handleResetPassword(member); }} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Reset Password">
                 <Lock className="h-3.5 w-3.5 text-amber-400" />
               </button>
               <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
@@ -209,7 +209,7 @@ export default function Team() {
                 <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
-                <button onClick={() => handleResetPassword(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                <button onClick={() => { if (confirm(`Reset password for ${member.name}? They will be required to change it on first login.`)) handleResetPassword(member); }} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Lock className="h-3.5 w-3.5 text-amber-400" />
                 </button>
                 <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
