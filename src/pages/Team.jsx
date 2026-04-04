@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserAvatar from "../components/shared/UserAvatar";
+import PhoneInput from "../components/shared/PhoneInput";
 
 export default function Team() {
   const [members, setMembers] = useState([]);
@@ -144,8 +145,9 @@ export default function Team() {
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">WhatsApp</Label>
-              <Input value={form.whatsapp} onChange={(e) => setForm({...form, whatsapp: e.target.value})}
-                className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+              <div className="mt-1">
+                <PhoneInput value={form.whatsapp} onChange={(v) => setForm({...form, whatsapp: v})} />
+              </div>
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Department</Label>
