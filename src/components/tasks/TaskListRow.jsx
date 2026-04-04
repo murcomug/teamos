@@ -1,11 +1,11 @@
 import PriorityBadge from "../shared/PriorityBadge";
 import StatusBadge from "../shared/StatusBadge";
 import UserAvatar from "../shared/UserAvatar";
-import { Calendar, Pencil, AlertTriangle } from "lucide-react";
+import { Calendar, Pencil, AlertTriangle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import moment from "moment";
 
-export default function TaskListRow({ task, onStatusChange, onEdit, members, allTasks = [] }) {
+export default function TaskListRow({ task, onStatusChange, onEdit, onDelete, members, allTasks = [] }) {
   const member = members.find((m) => m.name === task.assignee);
   const blockers = allTasks.filter(t => task.blocking_task_ids?.includes(t.id));
   const pendingBlockers = blockers.filter(t => t.status !== "completed");
@@ -71,12 +71,20 @@ export default function TaskListRow({ task, onStatusChange, onEdit, members, all
         </Select>
       </div>
 
-      <button
-        onClick={() => onEdit(task)}
-        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-white/[0.06] transition-all flex-shrink-0"
-      >
-        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onEdit(task)}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-white/[0.06] transition-all flex-shrink-0"
+        >
+          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+        <button
+          onClick={() => onDelete(task.id)}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-500/10 transition-all flex-shrink-0"
+        >
+          <Trash2 className="h-3.5 w-3.5 text-red-400" />
+        </button>
+      </div>
     </div>
   );
 }

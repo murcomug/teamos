@@ -15,6 +15,7 @@ import Departments from './pages/Departments';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
+import CompletedItems from './pages/CompletedItems';
 import MemberLogin from './pages/MemberLogin';
 import MemberPortal from './pages/MemberPortal';
 
@@ -49,6 +50,7 @@ const AuthenticatedApp = () => {
         <Route path="/departments" element={<Departments />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/completed-items" element={<CompletedItems />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

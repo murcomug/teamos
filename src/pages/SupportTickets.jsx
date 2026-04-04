@@ -61,6 +61,13 @@ export default function SupportTickets() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this support ticket?")) {
+      await base44.entities.Task.delete(id);
+      setTasks(tasks.filter((t) => t.id !== id));
+    }
+  };
+
   // Filter only support tickets
   const supportTickets = tasks.filter((t) => t.is_support_ticket);
   const filtered = supportTickets.filter((t) =>
@@ -115,7 +122,7 @@ export default function SupportTickets() {
         {filtered.length > 0 ? (
           filtered.map((task) => (
             <TaskListRow key={task.id} task={task} members={members} allTasks={tasks}
-              onStatusChange={handleStatusChange} onEdit={setEditTask} />
+              onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
           ))
         ) : (
           <div className="py-8 text-center">

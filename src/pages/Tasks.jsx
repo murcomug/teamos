@@ -63,6 +63,13 @@ export default function Tasks() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this task?")) {
+      await base44.entities.Task.delete(id);
+      setTasks(tasks.filter((t) => t.id !== id));
+    }
+  };
+
   const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
   const filtered = tasks
     .filter((t) =>
@@ -147,7 +154,7 @@ export default function Tasks() {
                 <div className="space-y-3">
                   {colTasks.map((task) => (
                     <TaskCard key={task.id} task={task} members={members} allTasks={tasks}
-                      onStatusChange={handleStatusChange} onEdit={setEditTask} />
+                      onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
                   ))}
                   {colTasks.length === 0 && (
                     <div className="glass-card rounded-xl p-6 text-center">
@@ -175,7 +182,7 @@ export default function Tasks() {
           </div>
           {filtered.map((task) => (
             <TaskListRow key={task.id} task={task} members={members} allTasks={tasks}
-              onStatusChange={handleStatusChange} onEdit={setEditTask} />
+              onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
           ))}
         </div>
       )}

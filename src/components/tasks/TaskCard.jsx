@@ -1,10 +1,10 @@
 import PriorityBadge from "../shared/PriorityBadge";
 import UserAvatar from "../shared/UserAvatar";
-import { Calendar, Pencil, AlertTriangle } from "lucide-react";
+import { Calendar, Pencil, AlertTriangle, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import moment from "moment";
 
-export default function TaskCard({ task, onStatusChange, onEdit, members, allTasks = [] }) {
+export default function TaskCard({ task, onStatusChange, onEdit, onDelete, members, allTasks = [] }) {
   const member = members.find((m) => m.name === task.assignee);
   const blockers = allTasks.filter(t => task.blocking_task_ids?.includes(t.id));
   const pendingBlockers = blockers.filter(t => t.status !== "completed");
@@ -13,12 +13,20 @@ export default function TaskCard({ task, onStatusChange, onEdit, members, allTas
     <div className="glass-card rounded-xl p-4 glass-card-hover transition-all duration-200 group">
       <div className="flex items-start justify-between mb-3">
         <PriorityBadge priority={task.priority} />
-        <button
-          onClick={() => onEdit(task)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-white/[0.06] transition-all"
-        >
-          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+          <button
+            onClick={() => onEdit(task)}
+            className="p-1.5 rounded-md hover:bg-white/[0.06] transition-all"
+          >
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+          <button
+            onClick={() => onDelete(task.id)}
+            className="p-1.5 rounded-md hover:bg-red-500/10 transition-all"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-red-400" />
+          </button>
+        </div>
       </div>
 
       <h4 className="text-sm font-semibold text-foreground mb-1.5 line-clamp-2">{task.title}</h4>

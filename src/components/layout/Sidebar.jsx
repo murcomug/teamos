@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, MessageSquare, CheckSquare, Users, Building2, 
-  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, Menu, X, Headset
+  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, Menu, X, Headset, CheckCircle2
 } from "lucide-react";
 import { useState } from "react";
 
@@ -10,6 +10,7 @@ const navItems = [
   { path: "/chat", icon: MessageSquare, label: "Agent Chat" },
   { path: "/tasks", icon: CheckSquare, label: "Tasks" },
   { path: "/support-tickets", icon: Headset, label: "Support Tickets" },
+  { path: "/completed-items", icon: CheckCircle2, label: "Completed" },
   { path: "/team", icon: Users, label: "Team" },
   { path: "/departments", icon: Building2, label: "Departments" },
   { path: "/reports", icon: BarChart3, label: "Reports" },
