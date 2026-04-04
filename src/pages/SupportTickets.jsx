@@ -208,33 +208,59 @@ export default function SupportTickets() {
       </div>
 
       {/* List View */}
-      <div className="glass-card rounded-xl overflow-hidden">
-        <div className="flex items-center gap-4 py-2.5 px-4 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-          <div className="flex-1 min-w-[200px]">Ticket</div>
-          <div className="w-24">Customer</div>
-          <div className="w-12">Assignee</div>
-          <div className="w-20">Priority</div>
-          <div className="w-16">Due</div>
-          <div className="w-24">Status</div>
-          <div className="w-12"></div>
-        </div>
+       <div className="glass-card rounded-xl overflow-x-auto">
+         <div className="flex items-center gap-3 py-2.5 px-4 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-full">
+           <div className="flex-1 min-w-[250px]">Ticket</div>
+           <div className="w-20 truncate">Customer</div>
+           <div className="w-16 truncate">Assignee</div>
+           <div className="w-20 truncate">Priority</div>
+           <div className="w-20 truncate">Status</div>
+           <div className="w-16 truncate">Due</div>
+           <div className="w-12 flex-shrink-0"></div>
+         </div>
         {filtered.length > 0 ? (
           filtered.map((task) => {
             const showCloseBtn = view === "active";
             return (
-              <div key={task.id} className="flex items-center gap-4 py-3 px-4 rounded-lg hover:bg-white/[0.03] transition-colors group border-b border-white/[0.03] last:border-0">
-                <div className="flex-1">
-                  <TaskListRow task={task} members={members} allTasks={tasks}
-                    onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
+              <div key={task.id} className="flex items-center gap-3 py-3 px-4 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors min-w-full">
+                <div className="flex-1 min-w-[250px] min-w-0">
+                  <h4 className="text-sm font-medium text-foreground truncate">{task.title}</h4>
+                  {task.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{task.description}</p>}
                 </div>
-                <div className="w-24 text-sm text-muted-foreground truncate">
+                <div className="w-20 text-xs text-muted-foreground truncate flex-shrink-0">
                   {task.customer_name || "—"}
+                </div>
+                <div className="w-16 text-xs text-muted-foreground truncate flex-shrink-0">
+                  {task.assignee || "—"}
+                </div>
+                <div className="w-20 flex-shrink-0">
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded whitespace-nowrap inline-block ${
+                    task.priority === "critical" ? "bg-red-500/15 text-red-400" :
+                    task.priority === "high" ? "bg-orange-500/15 text-orange-400" :
+                    task.priority === "medium" ? "bg-yellow-500/15 text-yellow-400" :
+                    "bg-blue-500/15 text-blue-400"
+                  }`}>
+                    {task.priority}
+                  </span>
+                </div>
+                <div className="w-20 text-xs text-muted-foreground flex-shrink-0">
+                  <span className={`px-2 py-0.5 rounded whitespace-nowrap inline-block ${
+                    task.status === "pending" ? "bg-slate-400/15 text-slate-400" :
+                    task.status === "ongoing" ? "bg-primary/15 text-primary" :
+                    task.status === "stopped" ? "bg-red-400/15 text-red-400" :
+                    "bg-emerald-400/15 text-emerald-400"
+                  }`}>
+                    {task.status}
+                  </span>
+                </div>
+                <div className="w-20 text-xs text-muted-foreground flex-shrink-0">
+                  {task.due_date ? new Date(task.due_date).toLocaleDateString("en-US", {month: "short", day: "numeric"}) : "—"}
                 </div>
                 {showCloseBtn && (
                   <Button
                     onClick={() => setCloseTicket(task)}
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white ml-2 flex-shrink-0"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
                   >
                     Close
                   </Button>
