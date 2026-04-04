@@ -116,7 +116,7 @@ export default function MemberTasks() {
         </div>
       )}
 
-      <div className="mb-6 flex gap-3 items-end justify-between">
+      <div className="mb-6 flex gap-3 items-end justify-start">
         <div className="w-1/2">
           <input
             type="text"
