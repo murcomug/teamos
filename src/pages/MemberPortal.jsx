@@ -25,11 +25,11 @@ export default function MemberPortal() {
 
   const navLinks = [
     { label: "Dashboard", href: "/member-portal", icon: CheckSquare },
+    { label: "Agent Chat", href: "/member-chat", icon: MessageSquare },
     { label: "Tasks", href: "/member-tasks", icon: CheckSquare },
     { label: "Support Tickets", href: "/member-support-tickets", icon: Ticket },
     { label: "Completed", href: "/member-completed", icon: CheckCircle },
     { label: "Notifications", href: "/member-notifications", icon: Bell },
-    { label: "Agent Chat", href: "/member-chat", icon: MessageSquare },
     ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: Users }] : []),
     ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: Building2 }] : []),
     ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/member-reports", icon: BarChart2 }] : []),
