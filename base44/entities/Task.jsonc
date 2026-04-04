@@ -44,6 +44,11 @@
       "type": "string",
       "format": "date",
       "title": "Due Date"
+    },
+    "is_support_ticket": {
+      "type": "boolean",
+      "title": "Support Ticket",
+      "default": false
     }
   },
   "required": [

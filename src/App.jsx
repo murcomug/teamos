@@ -9,6 +9,7 @@ import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import AgentChat from './pages/AgentChat';
 import Tasks from './pages/Tasks';
+import SupportTickets from './pages/SupportTickets';
 import Team from './pages/Team';
 import Departments from './pages/Departments';
 import Reports from './pages/Reports';
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/chat" element={<AgentChat />} />
         <Route path="/tasks" element={<Tasks />} />
+        <Route path="/support-tickets" element={<SupportTickets />} />
         <Route path="/team" element={<Team />} />
         <Route path="/departments" element={<Departments />} />
         <Route path="/reports" element={<Reports />} />
