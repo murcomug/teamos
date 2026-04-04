@@ -172,13 +172,13 @@ export default function Tasks() {
       {view === "list" && (
         <div className="glass-card rounded-xl overflow-hidden">
           <div className="flex items-center gap-4 py-2.5 px-4 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            <div className="flex-1">Task</div>
-            <div className="w-8">Assignee</div>
-            <div className="w-24">Priority</div>
-            <div className="w-20">Dept</div>
-            <div className="w-20">Due</div>
-            <div className="w-28">Status</div>
-            <div className="w-8"></div>
+            <div className="flex-1 min-w-[200px]">Task</div>
+            <div className="w-12">Assignee</div>
+            <div className="w-20">Priority</div>
+            <div className="w-16">Dept</div>
+            <div className="w-16">Due</div>
+            <div className="w-24">Status</div>
+            <div className="w-12"></div>
           </div>
           {filtered.map((task) => (
             <TaskListRow key={task.id} task={task} members={members} allTasks={tasks}
