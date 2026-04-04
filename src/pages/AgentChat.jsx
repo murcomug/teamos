@@ -93,10 +93,12 @@ ${scopeNote}
 User request: ${text}
 
 RESPONSE RULES:
-1. If creating a task: respond with task details in JSON format on a new line:
+1. If creating a TASK (operational work): respond with JSON on a new line:
 TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
-2. If listing/showing tasks (open, overdue, by status, by department, etc.): ALWAYS end with TASK_LIST:[ID1,ID2,ID3,...] using task IDs from above. Never describe task details in text.
-3. Format response in markdown. Be concise and professional.`;
+2. If creating a SUPPORT TICKET (customer support, issue report): respond with JSON on a new line:
+SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
+3. If listing/showing tasks (open, overdue, by status, etc.): ALWAYS end with TASK_LIST:[ID1,ID2,ID3,...] using task IDs from above. Never describe task details in text.
+4. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
@@ -118,6 +120,20 @@ TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"me
         content += "\n\n✅ Task created successfully!";
       } catch (e) {
         content += "\n\n⚠️ Could not auto-create the task. Please create it manually.";
+      }
+    } else if (typeof content === "string" && content.includes("SUPPORT_TICKET_CREATE:")) {
+      const parts = content.split("SUPPORT_TICKET_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const ticketData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdTask = await base44.entities.Task.create({ ...ticketData, is_support_ticket: true });
+        setTasks((prev) => [createdTask, ...prev]);
+        content += "\n\n✅ Support ticket created successfully!";
+      } catch (e) {
+        content += "\n\n⚠️ Could not auto-create the support ticket. Please create it manually.";
       }
     }
 
