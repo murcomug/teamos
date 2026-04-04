@@ -116,14 +116,16 @@ export default function MemberTasks() {
         </div>
       )}
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 mb-4"
-        />
+      <div className="mb-6 flex gap-3 items-end justify-between">
+        <div className="w-1/2">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+          />
+        </div>
         <div className="flex gap-3">
           <button
             onClick={() => setFilterAssignee("mine")}
