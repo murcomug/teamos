@@ -139,7 +139,7 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-112px)] max-w-4xl mx-auto">
+    <div className="flex flex-col h-[calc(100vh-72px)] md:h-[calc(100vh-112px)] max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Agent Chat</h1>

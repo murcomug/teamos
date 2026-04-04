@@ -104,15 +104,10 @@ export default function Team() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Table — desktop */}
+      <div className="glass-card rounded-xl overflow-hidden hidden md:block">
         <div className="grid grid-cols-[1fr_120px_140px_130px_80px_100px] gap-4 py-2.5 px-5 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-          <span>Name</span>
-          <span>Role</span>
-          <span>Department</span>
-          <span>WhatsApp</span>
-          <span>Status</span>
-          <span>Actions</span>
+          <span>Name</span><span>Role</span><span>Department</span><span>WhatsApp</span><span>Status</span><span>Actions</span>
         </div>
         {filtered.map((member) => (
           <div key={member.id} className="grid grid-cols-[1fr_120px_140px_130px_80px_100px] gap-4 items-center py-3 px-5 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
@@ -137,6 +132,39 @@ export default function Team() {
               <button onClick={() => openPermissions(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Permissions">
                 <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Cards — mobile */}
+      <div className="md:hidden space-y-3">
+        {filtered.map((member) => (
+          <div key={member.id} className="glass-card rounded-xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <UserAvatar name={member.name} color={member.avatar_color} size="sm" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{member.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                </a>
+                <button onClick={() => openPermissions(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                  <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {member.role && <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.04] text-muted-foreground">{member.role}</span>}
+              {member.department && <span className="text-[11px] px-2 py-0.5 rounded bg-primary/10 text-primary">{member.department}</span>}
+              <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${member.status === "active" ? "text-emerald-400" : "text-amber-400"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${member.status === "active" ? "bg-emerald-400" : "bg-amber-400"}`} />
+                {member.status === "active" ? "Active" : "Away"}
+              </span>
             </div>
           </div>
         ))}

@@ -102,7 +102,7 @@ export default function MemberPortal() {
         </div>
 
         {/* Stats */}
-        <div id="tasks" className="grid grid-cols-3 gap-4 mb-8">
+        <div id="tasks" className="grid grid-cols-3 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
           {[
             { label: "Open Tasks", value: openTasks.length, icon: CheckSquare, color: "text-primary" },
             { label: "Overdue", value: overdueTasks.length, icon: AlertCircle, color: "text-red-400" },

@@ -32,7 +32,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 border-b border-white/[0.06]"
+    <header className="hidden md:flex h-16 items-center justify-between px-6 border-b border-white/[0.06]"
       style={{ background: "rgba(10, 10, 18, 0.8)", backdropFilter: "blur(12px)" }}>
       
       {/* Search */}
