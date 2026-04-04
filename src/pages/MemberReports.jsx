@@ -1,0 +1,125 @@
+import { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { ArrowLeft, BarChart3, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export default function MemberReports() {
+  const [member, setMember] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const session = localStorage.getItem("memberSession");
+    if (!session) {
+      window.location.href = "/member-login";
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(session);
+      setMember(parsed);
+      loadReports();
+    } catch (err) {
+      localStorage.removeItem("memberSession");
+      window.location.href = "/member-login";
+    }
+  }, []);
+
+  const loadReports = async () => {
+    try {
+      const allTasks = await base44.entities.Task.list();
+      setTasks(allTasks || []);
+      
+      // Calculate stats
+      const total = allTasks?.length || 0;
+      const completed = allTasks?.filter(t => t.status === "completed").length || 0;
+      const pending = allTasks?.filter(t => t.status === "pending").length || 0;
+      const ongoing = allTasks?.filter(t => t.status === "ongoing").length || 0;
+      
+      setStats({
+        total,
+        completed,
+        pending,
+        ongoing,
+        completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
+      });
+    } catch (err) {
+      console.error("Error loading reports:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!member) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0a0f" }}>
+        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen" style={{ background: "#0a0a0f" }}>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-4 mb-8">
+          <a href="/member-portal" className="p-2 hover:bg-white/[0.05] rounded-lg">
+            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+          </a>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+            <p className="text-muted-foreground text-sm mt-1">Task analytics and insights</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : stats ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {[
+                { label: "Total Tasks", value: stats.total, icon: BarChart3, color: "text-blue-400" },
+                { label: "Completed", value: stats.completed, icon: TrendingUp, color: "text-emerald-400" },
+                { label: "Pending", value: stats.pending, icon: BarChart3, color: "text-yellow-400" },
+                { label: "Completion Rate", value: `${stats.completionRate}%`, icon: TrendingUp, color: "text-primary" },
+              ].map(({ label, value, icon: Icon, color }) => (
+                <div key={label} className="glass-card rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">{label}</p>
+                      <p className={`text-3xl font-bold ${color}`}>{value}</p>
+                    </div>
+                    <Icon className={`h-8 w-8 ${color} opacity-20`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="glass-card rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Task Distribution</h3>
+              <div className="space-y-3">
+                {[
+                  { status: "Completed", count: stats.completed, color: "bg-emerald-400" },
+                  { status: "Ongoing", count: stats.ongoing, color: "bg-blue-400" },
+                  { status: "Pending", count: stats.pending, color: "bg-yellow-400" },
+                ].map(({ status, count, color }) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{status}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-32 h-2 bg-white/[0.05] rounded-full overflow-hidden">
+                        <div className={`h-full ${color}`} style={{ width: `${stats.total > 0 ? (count / stats.total) * 100 : 0}%` }} />
+                      </div>
+                      <span className="text-sm font-semibold text-foreground w-12 text-right">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}

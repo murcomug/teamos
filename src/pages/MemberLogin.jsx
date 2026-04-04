@@ -178,9 +178,9 @@ function MemberPortalView({ member, tasks, sidebarOpen, setSidebarOpen, onLogout
 
   const navLinks = [
     { label: "My Tasks", href: "#tasks", icon: CheckSquare },
-    ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/team", icon: CheckSquare }] : []),
-    ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/departments", icon: CheckSquare }] : []),
-    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/reports", icon: CheckSquare }] : []),
+    ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: CheckSquare }] : []),
+    ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: CheckSquare }] : []),
+    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/member-reports", icon: CheckSquare }] : []),
   ];
 
   return (

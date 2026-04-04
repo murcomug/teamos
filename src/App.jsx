@@ -18,6 +18,9 @@ import Settings from './pages/Settings';
 import CompletedItems from './pages/CompletedItems';
 import ActivityLog from './pages/ActivityLog';
 import MemberLogin from './pages/MemberLogin';
+import MemberTeam from './pages/MemberTeam';
+import MemberDepartments from './pages/MemberDepartments';
+import MemberReports from './pages/MemberReports';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +70,9 @@ function App() {
           <Routes>
             <Route path="/member-login" element={<MemberLogin />} />
             <Route path="/member-portal" element={<MemberLogin />} />
+            <Route path="/member-team" element={<MemberTeam />} />
+            <Route path="/member-departments" element={<MemberDepartments />} />
+            <Route path="/member-reports" element={<MemberReports />} />
             <Route path="*" element={<AuthenticatedApp />} />
           </Routes>
         </Router>
