@@ -42,9 +42,16 @@ export default function MemberTasks() {
   }, [memberSession]);
 
   const deptTasks = tasks.filter(t => t.department === memberSession?.department && t.status !== "completed");
+  const deptRegularTasks = deptTasks.filter(t => !t.is_support_ticket);
+  const deptSupportTickets = deptTasks.filter(t => t.is_support_ticket);
+  
   const filteredTasks = filterAssignee === "mine" 
-    ? deptTasks.filter(t => t.assignee === memberSession?.name)
-    : deptTasks;
+    ? deptRegularTasks.filter(t => t.assignee === memberSession?.name)
+    : deptRegularTasks;
+  
+  const filteredTickets = filterAssignee === "mine"
+    ? deptSupportTickets.filter(t => t.assignee === memberSession?.name)
+    : deptSupportTickets;
 
   const handleCreateTask = async (form) => {
     try {
@@ -132,13 +139,16 @@ export default function MemberTasks() {
         </button>
       </div>
 
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-foreground mb-4">📋 Tasks</h2>
+
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
       ) : filteredTasks.length === 0 ? (
-        <div className="glass-card rounded-xl p-12 text-center">
-          <p className="text-muted-foreground">No tasks found.</p>
+        <div className="glass-card rounded-xl p-8 text-center">
+          <p className="text-muted-foreground text-sm">No tasks in your department.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -194,8 +204,78 @@ export default function MemberTasks() {
               </div>
             );
           })}
-        </div>
-      )}
+          </div>
+          )}
+          </div>
+
+          <div className="mb-8">
+          <h2 className="text-lg font-semibold text-foreground mb-4">🎫 Support Tickets</h2>
+          {loading ? (
+          <div className="flex items-center justify-center py-12">
+           <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+          ) : filteredTickets.length === 0 ? (
+          <div className="glass-card rounded-xl p-8 text-center">
+           <p className="text-muted-foreground text-sm">No support tickets in your department.</p>
+          </div>
+          ) : (
+          <div className="space-y-3">
+           {filteredTickets.map(ticket => {
+             const isOverdue = ticket.due_date && new Date(ticket.due_date) < new Date() && ticket.status !== "completed";
+             const isOwner = ticket.assignee === memberSession?.name;
+             return (
+               <div key={ticket.id} className="glass-card glass-card-hover rounded-xl p-4 transition-all border-l-2 border-orange-500/50">
+                 <div className="flex items-start justify-between gap-4">
+                   <div className="flex-1 min-w-0">
+                     <h3 className="text-sm font-semibold text-foreground truncate">{ticket.title}</h3>
+                     {ticket.description && (
+                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ticket.description}</p>
+                     )}
+                     <div className="flex items-center gap-2 mt-2 flex-wrap">
+                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-orange-500/20 text-orange-400">TICKET</span>
+                       <PriorityBadge priority={ticket.priority} />
+                       <StatusBadge status={ticket.status} />
+                       {ticket.customer_name && (
+                         <span className="text-[11px] text-muted-foreground font-mono px-2 py-0.5 rounded bg-white/[0.04]">
+                           {ticket.customer_name}
+                         </span>
+                       )}
+                       {ticket.assignee && (
+                         <span className="text-[11px] text-muted-foreground font-mono px-2 py-0.5 rounded bg-white/[0.04]">
+                           {ticket.assignee}
+                         </span>
+                       )}
+                       {ticket.due_date && (
+                         <span className={`text-[11px] font-mono ${isOverdue ? "text-red-400" : "text-muted-foreground"}`}>
+                           Due {moment(ticket.due_date).format("MMM D")}
+                           {isOverdue && " (overdue)"}
+                         </span>
+                       )}
+                     </div>
+                   </div>
+                   {isOwner && (
+                     <div className="flex items-center gap-2 flex-shrink-0">
+                       <button
+                         onClick={() => setEditTask(ticket)}
+                         className="p-1.5 rounded-md hover:bg-white/[0.06] transition-all"
+                       >
+                         <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                       </button>
+                       <button
+                         onClick={() => handleDelete(ticket.id)}
+                         className="p-1.5 rounded-md hover:bg-white/[0.06] transition-all"
+                       >
+                         <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-400" />
+                       </button>
+                     </div>
+                   )}
+                 </div>
+               </div>
+             );
+           })}
+          </div>
+          )}
+          </div>
 
       <TaskEditModal
         open={!!editTask}
@@ -204,7 +284,7 @@ export default function MemberTasks() {
         onSave={handleEditSave}
         members={members}
         departments={departments}
-        allTasks={tasks}
+        allTasks={tasks.filter(t => t.department === memberSession?.department)}
       />
     </div>
   );
