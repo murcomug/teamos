@@ -114,7 +114,7 @@ export default function SupportTickets() {
         </div>
         {filtered.length > 0 ? (
           filtered.map((task) => (
-            <TaskListRow key={task.id} task={task} members={members}
+            <TaskListRow key={task.id} task={task} members={members} allTasks={tasks}
               onStatusChange={handleStatusChange} onEdit={setEditTask} />
           ))
         ) : (
@@ -132,6 +132,7 @@ export default function SupportTickets() {
         onSave={handleSave}
         members={members}
         departments={departments}
+        allTasks={tasks}
       />
     </div>
   );

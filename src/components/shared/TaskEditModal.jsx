@@ -4,12 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import BlockingTaskSelector from "../tasks/BlockingTaskSelector";
+import { AlertCircle } from "lucide-react";
 
-export default function TaskEditModal({ open, onClose, task, onSave, members = [], departments = [] }) {
+export default function TaskEditModal({ open, onClose, task, onSave, members = [], departments = [], allTasks = [] }) {
   const [form, setForm] = useState({
     title: "", description: "", status: "pending", priority: "medium",
-    assignee: "", department: "", due_date: ""
+    assignee: "", department: "", due_date: "", blocking_task_ids: []
   });
+  const [blockingError, setBlockingError] = useState("");
 
   useEffect(() => {
     if (task) {
@@ -21,11 +24,22 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
         assignee: task.assignee || "",
         department: task.department || "",
         due_date: task.due_date || "",
+        blocking_task_ids: task.blocking_task_ids || [],
       });
     }
+    setBlockingError("");
   }, [task]);
 
   const handleSave = () => {
+    if (form.status === "completed" && form.blocking_task_ids?.length > 0) {
+      const blockers = allTasks.filter(t => form.blocking_task_ids.includes(t.id));
+      const pendingBlockers = blockers.filter(t => t.status !== "completed");
+      if (pendingBlockers.length > 0) {
+        setBlockingError(`Cannot complete: ${pendingBlockers.length} blocking task(s) still pending.`);
+        return;
+      }
+    }
+    setBlockingError("");
     onSave(form);
     onClose();
   };
@@ -108,6 +122,20 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
             <Input type="date" value={form.due_date} onChange={(e) => setForm({...form, due_date: e.target.value})}
               className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
           </div>
+          <div>
+            <BlockingTaskSelector
+              allTasks={allTasks}
+              currentTaskId={task?.id}
+              blockingTaskIds={form.blocking_task_ids}
+              onChange={(ids) => setForm({...form, blocking_task_ids: ids})}
+            />
+          </div>
+          {blockingError && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-900/20 border border-red-500/30">
+              <AlertCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+              <span className="text-xs text-red-400">{blockingError}</span>
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground">Cancel</Button>
             <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">

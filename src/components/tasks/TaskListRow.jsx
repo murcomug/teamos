@@ -1,19 +1,37 @@
 import PriorityBadge from "../shared/PriorityBadge";
 import StatusBadge from "../shared/StatusBadge";
 import UserAvatar from "../shared/UserAvatar";
-import { Calendar, Pencil } from "lucide-react";
+import { Calendar, Pencil, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import moment from "moment";
 
-export default function TaskListRow({ task, onStatusChange, onEdit, members }) {
+export default function TaskListRow({ task, onStatusChange, onEdit, members, allTasks = [] }) {
   const member = members.find((m) => m.name === task.assignee);
+  const blockers = allTasks.filter(t => task.blocking_task_ids?.includes(t.id));
+  const pendingBlockers = blockers.filter(t => t.status !== "completed");
+
+  const handleStatusChange = (newStatus) => {
+    if (newStatus === "completed" && pendingBlockers.length > 0) {
+      alert(`Cannot complete: ${pendingBlockers.length} blocking task(s) still pending.`);
+      return;
+    }
+    onStatusChange(task.id, newStatus);
+  };
 
   return (
     <div className="flex items-center gap-4 py-3 px-4 rounded-lg hover:bg-white/[0.03] transition-colors group border-b border-white/[0.03] last:border-0">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
+          {pendingBlockers.length > 0 && (
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+          )}
+        </div>
         {task.description && (
           <p className="text-xs text-muted-foreground truncate mt-0.5">{task.description}</p>
+        )}
+        {pendingBlockers.length > 0 && (
+          <p className="text-[11px] text-amber-300 mt-0.5">Blocked by {pendingBlockers.length} task(s)</p>
         )}
       </div>
 
@@ -41,7 +59,7 @@ export default function TaskListRow({ task, onStatusChange, onEdit, members }) {
       </div>
 
       <div className="w-28 flex-shrink-0">
-        <Select value={task.status} onValueChange={(v) => onStatusChange(task.id, v)}>
+        <Select value={task.status} onValueChange={handleStatusChange}>
           <SelectTrigger className="h-7 text-[11px] bg-white/[0.03] border-white/[0.06] text-foreground">
             <SelectValue />
           </SelectTrigger>

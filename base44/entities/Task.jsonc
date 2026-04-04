@@ -49,6 +49,14 @@
       "type": "boolean",
       "title": "Support Ticket",
       "default": false
+    },
+    "blocking_task_ids": {
+      "type": "array",
+      "title": "Blocked By",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     }
   },
   "required": [

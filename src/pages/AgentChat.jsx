@@ -209,6 +209,7 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
         onSave={handleEditSave}
         members={members}
         departments={departments}
+        allTasks={tasks}
       />
     </div>
   );

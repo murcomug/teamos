@@ -146,7 +146,7 @@ export default function Tasks() {
                 </div>
                 <div className="space-y-3">
                   {colTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} members={members}
+                    <TaskCard key={task.id} task={task} members={members} allTasks={tasks}
                       onStatusChange={handleStatusChange} onEdit={setEditTask} />
                   ))}
                   {colTasks.length === 0 && (
@@ -174,7 +174,7 @@ export default function Tasks() {
             <div className="w-8"></div>
           </div>
           {filtered.map((task) => (
-            <TaskListRow key={task.id} task={task} members={members}
+            <TaskListRow key={task.id} task={task} members={members} allTasks={tasks}
               onStatusChange={handleStatusChange} onEdit={setEditTask} />
           ))}
         </div>
@@ -188,6 +188,7 @@ export default function Tasks() {
         onSave={handleSave}
         members={members}
         departments={departments}
+        allTasks={tasks}
       />
     </div>
   );
