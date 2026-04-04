@@ -58,16 +58,20 @@ export default function Tasks() {
     if (editTask?.id) {
       await base44.entities.Task.update(editTask.id, form);
       setTasks(tasks.map((t) => (t.id === editTask.id ? { ...t, ...form } : t)));
+      await base44.functions.invoke('logActivity', { action: 'TASK_UPDATED', description: `Task "${form.title}" was updated`, entity_type: 'Task', entity_id: editTask.id });
     } else {
       const created = await base44.entities.Task.create(form);
       setTasks([created, ...tasks]);
+      await base44.functions.invoke('logActivity', { action: 'TASK_CREATED', description: `New task "${form.title}" was created`, entity_type: 'Task', entity_id: created.id });
     }
   };
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this task?")) {
+      const task = tasks.find((t) => t.id === id);
       await base44.entities.Task.delete(id);
       setTasks(tasks.filter((t) => t.id !== id));
+      await base44.functions.invoke('logActivity', { action: 'TASK_DELETED', description: `Task "${task?.title}" was deleted`, entity_type: 'Task', entity_id: id });
     }
   };
 

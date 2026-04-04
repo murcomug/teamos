@@ -58,12 +58,15 @@ export default function Team() {
     setShowAdd(false);
     setForm({ name: "", email: "", whatsapp: "", department: "", role: "" });
     setFormPerms([]);
+    await base44.functions.invoke('logActivity', { action: 'TEAM_MEMBER_ADDED', description: `New team member "${form.name}" was added to ${form.department}`, entity_type: 'TeamMember', entity_id: created.id });
   };
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this team member?")) {
+      const member = members.find((m) => m.id === id);
       await base44.entities.TeamMember.delete(id);
       setMembers(members.filter((m) => m.id !== id));
+      await base44.functions.invoke('logActivity', { action: 'TEAM_MEMBER_DELETED', description: `Team member "${member?.name}" was deleted`, entity_type: 'TeamMember', entity_id: id });
     }
   };
 
