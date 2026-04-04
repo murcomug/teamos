@@ -217,7 +217,9 @@ export default function PhoneInput({ value = "", onChange, className = "" }) {
   };
 
   const handleNumberChange = (e) => {
-    const n = e.target.value.replace(/[^0-9\s\-]/g, "");
+    let n = e.target.value.replace(/[^0-9\s\-]/g, "");
+    // Strip leading zero
+    n = n.replace(/^0+/, "");
     setNumber(n);
     onChange(`${countryCode}${n}`);
   };
