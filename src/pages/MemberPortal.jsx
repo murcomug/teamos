@@ -13,7 +13,8 @@ export default function MemberPortal() {
   const [loading, setLoading] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
-  const hasPerm = (key) => (member?.permissions || []).includes(key);
+  const isAdmin = member?.role === "admin";
+  const isOperator = member?.role === "operator";
 
   useEffect(() => {
     const session = localStorage.getItem("memberSession");
@@ -76,25 +77,23 @@ export default function MemberPortal() {
           <p className="text-muted-foreground text-sm mt-1">Welcome back, {member.name}!</p>
         </div>
 
-        {/* Quick nav based on permissions */}
+        {/* Quick nav based on role */}
         <div className="flex flex-wrap gap-3 mb-8">
           <a href="#tasks" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
             <CheckSquare className="h-4 w-4 text-primary" /> My Tasks
           </a>
-          {hasPerm("view_team") && (
-            <a href="/team" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
-              <Users className="h-4 w-4 text-primary" /> Team
-            </a>
-          )}
-          {hasPerm("view_departments") && (
-            <a href="/departments" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
-              <Building2 className="h-4 w-4 text-primary" /> Departments
-            </a>
-          )}
-          {hasPerm("view_reports") && (
-            <a href="/reports" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
-              <BarChart2 className="h-4 w-4 text-primary" /> Reports
-            </a>
+          {isAdmin && (
+            <>
+              <a href="/team" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+                <Users className="h-4 w-4 text-primary" /> Team
+              </a>
+              <a href="/departments" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+                <Building2 className="h-4 w-4 text-primary" /> Departments
+              </a>
+              <a href="/reports" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
+                <BarChart2 className="h-4 w-4 text-primary" /> Reports
+              </a>
+            </>
           )}
           <a href="/chat" className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm text-foreground hover:bg-white/[0.06] transition-all">
             <MessageSquare className="h-4 w-4 text-primary" /> Agent Chat

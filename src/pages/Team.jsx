@@ -18,7 +18,7 @@ export default function Team() {
   const [deptFilter, setDeptFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [editMember, setEditMember] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "" });
+  const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "operator" });
   const [formPerms, setFormPerms] = useState([]);
 
   useEffect(() => {
@@ -208,8 +208,18 @@ export default function Team() {
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Role</Label>
-              <Input value={form.role} onChange={(e) => setForm({...form, role: e.target.value})}
-                className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+              <Select value={form.role} onValueChange={(v) => setForm({...form, role: v})}>
+                <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
+                  <SelectItem value="admin" className="text-foreground">Admin - Full Access</SelectItem>
+                  <SelectItem value="operator" className="text-foreground">Operator - Limited Access</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                {form.role === "admin" ? "✓ Can view all data, add members, add departments" : "✓ Limited to own department, cannot manage members or departments"}
+              </p>
             </div>
             <div>
               <Label className="text-muted-foreground text-xs mb-2 block">Permissions</Label>
