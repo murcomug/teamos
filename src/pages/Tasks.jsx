@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { LayoutGrid, List, Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "../components/tasks/TaskCard";
 import TaskListRow from "../components/tasks/TaskListRow";
 import TaskEditModal from "../components/shared/TaskEditModal";
@@ -68,6 +69,15 @@ export default function Tasks() {
       await base44.entities.Task.delete(id);
       setTasks(tasks.filter((t) => t.id !== id));
     }
+  };
+
+  const handleDragEnd = async (result) => {
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    const newStatus = destination.droppableId;
+    await handleStatusChange(draggableId, newStatus);
   };
 
   const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -141,31 +151,57 @@ export default function Tasks() {
 
       {/* Kanban View */}
       {view === "kanban" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {columns.map((col) => {
-            const colTasks = filtered.filter((t) => t.status === col);
-            return (
-              <div key={col}>
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <span className={`h-2 w-2 rounded-full ${columnDots[col]}`} />
-                  <span className="text-xs font-semibold text-foreground uppercase tracking-wider">{columnLabels[col]}</span>
-                  <span className="text-xs text-muted-foreground font-mono ml-auto">{colTasks.length}</span>
-                </div>
-                <div className="space-y-3">
-                  {colTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} members={members} allTasks={tasks}
-                      onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
-                  ))}
-                  {colTasks.length === 0 && (
-                    <div className="glass-card rounded-xl p-6 text-center">
-                      <p className="text-xs text-muted-foreground">No tasks</p>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {columns.map((col) => {
+              const colTasks = filtered.filter((t) => t.status === col);
+              return (
+                <Droppable key={col} droppableId={col}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? "bg-primary/10" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-3 px-1">
+                        <span className={`h-2 w-2 rounded-full ${columnDots[col]}`} />
+                        <span className="text-xs font-semibold text-foreground uppercase tracking-wider">{columnLabels[col]}</span>
+                        <span className="text-xs text-muted-foreground font-mono ml-auto">{colTasks.length}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {colTasks.map((task, index) => (
+                          <Draggable key={task.id} draggableId={task.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`transition-all ${
+                                  snapshot.isDragging ? "opacity-50" : ""
+                                }`}
+                              >
+                                <TaskCard task={task} members={members} allTasks={tasks}
+                                  onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {colTasks.length === 0 && (
+                          <div className="glass-card rounded-xl p-6 text-center">
+                            <p className="text-xs text-muted-foreground">No tasks</p>
+                          </div>
+                        )}
+                        {provided.placeholder}
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                </Droppable>
+              );
+            })}
+          </div>
+        </DragDropContext>
       )}
 
       {/* List View */}
