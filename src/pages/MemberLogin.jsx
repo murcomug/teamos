@@ -209,19 +209,19 @@ function MemberPortalView({ member, tasks, sidebarOpen, setSidebarOpen, onLogout
             if (href.startsWith('#')) {
               return (
                 <a key={label} href={href}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all min-w-0"
                   onClick={() => setSidebarOpen(false)}>
-                  <IconComponent className="h-4 w-4" />
-                  {label}
+                  <IconComponent className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{label}</span>
                 </a>
               );
             }
             return (
               <Link key={label} to={href}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all"
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all min-w-0"
                 onClick={() => setSidebarOpen(false)}>
-                <IconComponent className="h-4 w-4" />
-                {label}
+                <IconComponent className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{label}</span>
               </Link>
             );
           })}
