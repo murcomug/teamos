@@ -178,12 +178,21 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
       content = parts[0].trim();
       try {
         let raw = parts[1].trim();
+        // Strip markdown code fences
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
-        // Extract array from text - match [...] more carefully
-        const bracketMatch = raw.match(/\[([^\[\]]*)\]/);
-        if (bracketMatch && bracketMatch[1]) {
-          // Split by comma and filter empty strings
-          const idStrings = bracketMatch[1].split(',').map(s => s.trim()).filter(s => s.length > 0);
+        // Extract the array - greedy match to get everything between [ and ]
+        const bracketMatch = raw.match(/\[(.+?)\]/);
+        if (bracketMatch) {
+          // Split by comma, extract quoted strings and unquoted IDs
+          const arrayContent = bracketMatch[1];
+          const idStrings = arrayContent
+            .split(',')
+            .map(s => {
+              // Remove quotes if present
+              const trimmed = s.trim();
+              return trimmed.replace(/^["']|["']$/g, '');
+            })
+            .filter(s => s.length > 0);
           listedTasks = idStrings
             .map(id => tasks.find(t => t.id === id))
             .filter(Boolean);
