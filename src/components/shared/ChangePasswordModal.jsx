@@ -26,24 +26,28 @@ export default function ChangePasswordModal({ open, memberId, onSuccess }) {
     }
 
     setLoading(true);
-    const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "changePassword", memberId, newPassword }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "changePassword", memberId, newPassword }),
+      });
+      const data = await res.json();
 
-    if (data?.success) {
-      // Update localStorage session
-      const session = JSON.parse(localStorage.getItem("memberSession") || "{}");
-      session.must_change_password = false;
-      localStorage.setItem("memberSession", JSON.stringify(session));
-      onSuccess();
-    } else {
-      setError(data?.error || "Failed to update password.");
+      if (data?.success) {
+        // Clear form and call success
+        setNewPassword("");
+        setConfirm("");
+        onSuccess();
+      } else {
+        setError(data?.error || "Failed to update password.");
+      }
+    } catch (err) {
+      setError("Connection error. Please try again.");
+      console.error("Password change error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

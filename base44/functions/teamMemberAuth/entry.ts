@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
             department: member.department || "",
             avatar_color: member.avatar_color || "#2dd4bf",
             must_change_password: member.must_change_password === true,
+            permissions: member.permissions || [],
           }
         },
         { status: 200 }
