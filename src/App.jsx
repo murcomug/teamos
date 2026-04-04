@@ -16,6 +16,7 @@ import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import CompletedItems from './pages/CompletedItems';
+import ActivityLog from './pages/ActivityLog';
 import MemberLogin from './pages/MemberLogin';
 import MemberPortal from './pages/MemberPortal';
 
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/completed-items" element={<CompletedItems />} />
+        <Route path="/activity-log" element={<ActivityLog />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
