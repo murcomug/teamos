@@ -17,6 +17,7 @@ export default function MemberTasks() {
   const [editTask, setEditTask] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [filterAssignee, setFilterAssignee] = useState("mine");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (!memberSession) return;
@@ -44,14 +45,24 @@ export default function MemberTasks() {
   const deptTasks = tasks.filter(t => t.department === memberSession?.department && t.status !== "completed");
   const deptRegularTasks = deptTasks.filter(t => !t.is_support_ticket);
   const deptSupportTickets = deptTasks.filter(t => t.is_support_ticket);
-  
-  const filteredTasks = filterAssignee === "mine" 
+
+  const tasksToFilter = filterAssignee === "mine" 
     ? deptRegularTasks.filter(t => t.assignee === memberSession?.name)
     : deptRegularTasks;
-  
-  const filteredTickets = filterAssignee === "mine"
+
+  const ticketsToFilter = filterAssignee === "mine"
     ? deptSupportTickets.filter(t => t.assignee === memberSession?.name)
     : deptSupportTickets;
+
+  const filteredTasks = tasksToFilter.filter(t =>
+    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredTickets = ticketsToFilter.filter(t =>
+    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleCreateTask = async (form) => {
     try {
@@ -116,27 +127,36 @@ export default function MemberTasks() {
         </div>
       )}
 
-      <div className="mb-6 flex gap-3">
-        <button
-          onClick={() => setFilterAssignee("mine")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterAssignee === "mine"
-              ? "bg-primary text-primary-foreground"
-              : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
-          }`}
-        >
-          My Tasks
-        </button>
-        <button
-          onClick={() => setFilterAssignee("all")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterAssignee === "all"
-              ? "bg-primary text-primary-foreground"
-              : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
-          }`}
-        >
-          All Dept Tasks
-        </button>
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 mb-4"
+        />
+        <div className="flex gap-3">
+          <button
+            onClick={() => setFilterAssignee("mine")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              filterAssignee === "mine"
+                ? "bg-primary text-primary-foreground"
+                : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
+            }`}
+          >
+            My Tasks
+          </button>
+          <button
+            onClick={() => setFilterAssignee("all")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              filterAssignee === "all"
+                ? "bg-primary text-primary-foreground"
+                : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
+            }`}
+          >
+            All Dept Tasks
+          </button>
+        </div>
       </div>
 
       <div className="mb-8">
