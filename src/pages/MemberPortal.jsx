@@ -24,7 +24,7 @@ export default function MemberPortal() {
   const hasPermission = (perm) => memberSession?.permissions?.includes(perm);
 
   const navLinks = [
-    { label: "My Tasks", href: "#tasks", icon: CheckSquare },
+    { label: "My Tasks", href: "/member-portal", icon: CheckSquare },
     { label: "Agent Chat", href: "/member-chat", icon: MessageSquare },
     ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: Users }] : []),
     ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: Building2 }] : []),
@@ -44,26 +44,15 @@ export default function MemberPortal() {
         </div>
         
         <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-          {navLinks.map(({ label, href, icon: IconComponent }) => {
-            if (href.startsWith('#')) {
-              return (
-                <a key={label} href={href}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all min-w-0"
-                  onClick={() => setSidebarOpen(false)}>
-                  <IconComponent className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{label}</span>
-                </a>
-              );
-            }
-            return (
-              <Link key={label} to={href}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all min-w-0"
-                onClick={() => setSidebarOpen(false)}>
-                <IconComponent className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{label}</span>
-              </Link>
-            );
-          })}
+          {navLinks.map(({ label, href, icon: IconComponent }) => (
+            <Link key={label} to={href}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-all min-w-0"
+              onClick={() => setSidebarOpen(false)}>
+              <IconComponent className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{label}</span>
+            </Link>
+            ))
+          })
         </nav>
       </aside>
 
