@@ -18,6 +18,7 @@ export default function SupportTickets() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
   const [editTask, setEditTask] = useState(null);
   const [closeTicket, setCloseTicket] = useState(null);
   const [completedTab, setCompletedTab] = useState("all");
@@ -93,10 +94,13 @@ export default function SupportTickets() {
   const unresolvedTickets = completedTickets.filter((t) => t.resolution_status === "unresolved");
   
   const displayTickets = completedTab === "all" ? completedTickets : completedTab === "resolved" ? resolvedTickets : unresolvedTickets;
-  const filtered = (view === "completed" ? displayTickets : activeTickets).filter((t) =>
-    t.title?.toLowerCase().includes(search.toLowerCase()) ||
-    t.assignee?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = (view === "completed" ? displayTickets : activeTickets).filter((t) => {
+    const matchesSearch = t.title?.toLowerCase().includes(search.toLowerCase()) || t.assignee?.toLowerCase().includes(search.toLowerCase());
+    const matchesCustomer = !customerFilter || t.customer_name?.toLowerCase().includes(customerFilter.toLowerCase());
+    return matchesSearch && matchesCustomer;
+  });
+
+  const uniqueCustomers = [...new Set(supportTickets.map(t => t.customer_name).filter(Boolean))].sort();
 
   if (loading) {
     return (
@@ -188,12 +192,23 @@ export default function SupportTickets() {
             className="w-full h-9 pl-10 pr-4 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-all"
           />
         </div>
+        <select
+          value={customerFilter}
+          onChange={(e) => setCustomerFilter(e.target.value)}
+          className="h-9 px-4 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-foreground focus:outline-none focus:border-primary/40 transition-all"
+        >
+          <option value="">All Customers</option>
+          {uniqueCustomers.map(customer => (
+            <option key={customer} value={customer}>{customer}</option>
+          ))}
+        </select>
       </div>
 
       {/* List View */}
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="flex items-center gap-4 py-2.5 px-4 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           <div className="flex-1 min-w-[200px]">Ticket</div>
+          <div className="w-24">Customer</div>
           <div className="w-12">Assignee</div>
           <div className="w-20">Priority</div>
           <div className="w-16">Due</div>
@@ -208,6 +223,9 @@ export default function SupportTickets() {
                 <div className="flex-1">
                   <TaskListRow task={task} members={members} allTasks={tasks}
                     onStatusChange={handleStatusChange} onEdit={setEditTask} onDelete={handleDelete} />
+                </div>
+                <div className="w-24 text-sm text-muted-foreground truncate">
+                  {task.customer_name || "—"}
                 </div>
                 {showCloseBtn && (
                   <Button

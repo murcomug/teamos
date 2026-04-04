@@ -50,6 +50,10 @@
       "title": "Support Ticket",
       "default": false
     },
+    "customer_name": {
+      "type": "string",
+      "title": "Customer Name"
+    },
     "blocking_task_ids": {
       "type": "array",
       "title": "Blocked By",

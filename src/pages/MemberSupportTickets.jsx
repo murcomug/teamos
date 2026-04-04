@@ -16,6 +16,7 @@ export default function MemberSupportTickets() {
   const [editTask, setEditTask] = useState(null);
   const [activeTab, setActiveTab] = useState("open");
   const [searchTerm, setSearchTerm] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
 
   useEffect(() => {
     if (!memberSession) return;
@@ -58,11 +59,15 @@ export default function MemberSupportTickets() {
   const openTickets = tickets.filter(t => t.status !== "completed");
   const closedTickets = tickets.filter(t => t.status === "completed");
 
-  const filteredTickets = (activeTab === "open" ? openTickets : closedTickets).filter(t =>
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.assignee?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTickets = (activeTab === "open" ? openTickets : closedTickets).filter(t => {
+    const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.assignee?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCustomer = !customerFilter || t.customer_name?.toLowerCase().includes(customerFilter.toLowerCase());
+    return matchesSearch && matchesCustomer;
+  });
+
+  const uniqueCustomers = [...new Set(tickets.map(t => t.customer_name).filter(Boolean))].sort();
 
   const handleEditSave = async (form) => {
     if (editTask?.id) {
@@ -106,13 +111,25 @@ export default function MemberSupportTickets() {
         <p className="text-muted-foreground text-sm mt-1">Report and track issues</p>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search tickets by title, description, or assignee..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-6 px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
-      />
+      <div className="flex gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="Search tickets by title, description, or assignee..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+        />
+        <select
+          value={customerFilter}
+          onChange={(e) => setCustomerFilter(e.target.value)}
+          className="px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-foreground focus:outline-none focus:border-primary/40"
+        >
+          <option value="">All Customers</option>
+          {uniqueCustomers.map(customer => (
+            <option key={customer} value={customer}>{customer}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="flex gap-2 mb-6">
         <button
@@ -174,6 +191,11 @@ export default function MemberSupportTickets() {
                       {ticket.department && (
                         <span className="text-[11px] text-muted-foreground font-mono px-2 py-0.5 rounded bg-white/[0.04]">
                           {ticket.department}
+                        </span>
+                      )}
+                      {ticket.customer_name && (
+                        <span className="text-[11px] text-primary font-mono px-2 py-0.5 rounded bg-primary/10">
+                          {ticket.customer_name}
                         </span>
                       )}
                       {ticket.due_date && (

@@ -10,7 +10,7 @@ import { AlertCircle } from "lucide-react";
 export default function TaskEditModal({ open, onClose, task, onSave, members = [], departments = [], allTasks = [] }) {
   const [form, setForm] = useState({
     title: "", description: "", status: "pending", priority: "medium",
-    assignee: "", department: "", due_date: "", blocking_task_ids: []
+    assignee: "", department: "", due_date: "", blocking_task_ids: [], customer_name: ""
   });
   const [blockingError, setBlockingError] = useState("");
 
@@ -25,6 +25,7 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
         department: task.department || "",
         due_date: task.due_date || "",
         blocking_task_ids: task.blocking_task_ids || [],
+        customer_name: task.customer_name || "",
       });
     }
     setBlockingError("");
@@ -122,6 +123,14 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
             <Input type="date" value={form.due_date} onChange={(e) => setForm({...form, due_date: e.target.value})}
               className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
           </div>
+          {task?.id === undefined || task?.is_support_ticket ? (
+            <div>
+              <Label className="text-muted-foreground text-xs">Customer Name (Support Tickets)</Label>
+              <Input value={form.customer_name} onChange={(e) => setForm({...form, customer_name: e.target.value})}
+                placeholder="e.g., Acme Corp"
+                className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+            </div>
+          ) : null}
           <div>
             <BlockingTaskSelector
               allTasks={allTasks}
