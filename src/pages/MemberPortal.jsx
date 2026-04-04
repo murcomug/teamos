@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useMemberSession } from "@/lib/MemberSessionContext";
-import { CheckSquare, AlertCircle, Clock, MessageSquare, Users, Building2, BarChart2, Menu, X, LogOut } from "lucide-react";
+import { CheckSquare, Ticket, Clock, MessageSquare, Users, Building2, BarChart2, Menu, X, LogOut, CheckCircle, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import UserAvatar from "../components/shared/UserAvatar";
 import { useState } from "react";
@@ -24,7 +24,11 @@ export default function MemberPortal() {
   const hasPermission = (perm) => memberSession?.permissions?.includes(perm);
 
   const navLinks = [
-    { label: "My Tasks", href: "/member-portal", icon: CheckSquare },
+    { label: "Dashboard", href: "/member-portal", icon: CheckSquare },
+    { label: "Tasks", href: "/member-tasks", icon: CheckSquare },
+    { label: "Support Tickets", href: "/member-support-tickets", icon: Ticket },
+    { label: "Completed", href: "/member-completed", icon: CheckCircle },
+    { label: "Notifications", href: "/member-notifications", icon: Bell },
     { label: "Agent Chat", href: "/member-chat", icon: MessageSquare },
     ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: Users }] : []),
     ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: Building2 }] : []),

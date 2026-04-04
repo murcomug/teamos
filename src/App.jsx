@@ -22,6 +22,7 @@ import MemberLogin from './pages/MemberLogin';
 import MemberPortal from './pages/MemberPortal';
 import MemberDashboard from './pages/MemberDashboard';
 import MemberTasks from './pages/MemberTasks';
+import MemberSupportTickets from './pages/MemberSupportTickets';
 import MemberCompletedItems from './pages/MemberCompletedItems';
 import MemberNotifications from './pages/MemberNotifications';
 import MemberChatContent from './pages/MemberChat';
@@ -80,6 +81,7 @@ function App() {
               <Route element={<MemberPortal />}>
                 <Route path="/member-portal" element={<MemberDashboard />} />
                 <Route path="/member-tasks" element={<MemberTasks />} />
+                <Route path="/member-support-tickets" element={<MemberSupportTickets />} />
                 <Route path="/member-completed" element={<MemberCompletedItems />} />
                 <Route path="/member-notifications" element={<MemberNotifications />} />
                 <Route path="/member-chat" element={<MemberChatContent />} />
