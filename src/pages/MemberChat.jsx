@@ -85,14 +85,15 @@ export default function MemberChatContent() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
-    const taskSummary = tasks.slice(0, 20).map(t =>
+    const deptTasks = tasks.filter(t => t.department === memberSession?.department);
+    const taskSummary = deptTasks.slice(0, 30).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
     ).join("\n");
 
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
 
-    const prompt = `You are TeamOS AI assistant helping a team member. This member can only see their own tasks and create tasks/support tickets.
+    const prompt = `You are TeamOS AI assistant helping a team member. This member can see all tasks in their department (${memberSession?.department}) and create tasks/support tickets.
 
 **WORK ITEM TYPES:**
 - **Tasks**: Operational work assigned to this member
@@ -100,7 +101,7 @@ export default function MemberChatContent() {
 
 **Member's Data:**
 
-TASKS (only assigned to ${memberSession?.name}):
+TASKS (all open tasks in ${memberSession?.department} department):
 ${taskSummary}
 
 TEAM: ${memberSummary}
@@ -122,14 +123,16 @@ TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"me
 3. **If creating a SUPPORT TICKET**: respond with JSON on a new line:
 SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}
 
-4. **If user asks to view/list their tasks** (keywords: "show", "list", "open", "pending", etc.):
-   - Filter their tasks and return matching IDs with TASK_LIST:[id1,id2,id3]
+4. **IF THE USER IS ASKING TO VIEW/LIST/FILTER** (keywords: "show", "list", "what are", "get", "open", "pending", "overdue", "tickets", "issues", etc.):
+   - **For general task requests**: Filter tasks in their department and return matching IDs with TASK_LIST:[id1,id2,id3]
+   - **For ticket-specific requests** (keywords: "ticket", "issue", "support", "problem"): Filter only support tickets (is_support_ticket: true) in their department
+   - **For task-specific requests** (keywords: "task", "work", "assignment"): Filter only regular tasks (is_support_ticket: false or not set) in their department
+   - MANDATORY: End response with TASK_LIST:[id1,id2,id3] using matching IDs from their department
    - Do NOT list task details in the text - let the cards display them
-   - Example: "Here are your open tasks:\n\nTASK_LIST:[abc,def]"
+   - Example: User: "Show me open tasks in my department" → "Here are all open tasks in ${memberSession?.department}:\n\nTASK_LIST:[abc,def,ghi]"
+   - Example: User: "List department support tickets" → "Here are your department's open support tickets:\n\nTASK_LIST:[xyz,uvw]"
 
-5. Format response in markdown. Be concise and helpful.
-6. Only show data related to THIS member's tasks and department.
-7. Politely refuse requests for company-wide stats or other members' data.`;
+5. Format response in markdown. Be concise and helpful.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
