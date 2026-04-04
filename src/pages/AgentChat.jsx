@@ -106,7 +106,12 @@ If the user asks to list or show tasks, include TASK_LIST:[ID1,ID2,ID3,...] at t
       const parts = content.split("TASK_CREATE:");
       content = parts[0].trim();
       try {
-        const taskData = JSON.parse(parts[1].trim());
+        // Strip markdown code fences if LLM wrapped JSON in ```json ... ```
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        // Extract only the first JSON object
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const taskData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
         createdTask = await base44.entities.Task.create(taskData);
         setTasks((prev) => [createdTask, ...prev]);
         content += "\n\n✅ Task created successfully!";
