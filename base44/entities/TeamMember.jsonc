@@ -34,6 +34,19 @@
     "avatar_color": {
       "type": "string",
       "title": "Avatar Color"
+    },
+    "password_hash": {
+      "type": "string",
+      "title": "Password Hash"
+    },
+    "password_expires": {
+      "type": "string",
+      "title": "Password Expires"
+    },
+    "must_change_password": {
+      "type": "boolean",
+      "title": "Must Change Password",
+      "default": true
     }
   },
   "required": [

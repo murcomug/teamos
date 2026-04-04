@@ -1,19 +1,35 @@
-import { Search, Bell } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, Bell, LogOut, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 
 export default function TopBar() {
   const [user, setUser] = useState(null);
   const [searchValue, setSearchValue] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   const initials = user?.full_name
     ? user.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
+
+  const handleLogout = () => {
+    base44.auth.logout();
+  };
 
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b border-white/[0.06]"
@@ -38,8 +54,31 @@ export default function TopBar() {
           <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
         </Link>
         
-        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-primary text-xs font-semibold">{initials}</span>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors cursor-pointer"
+          >
+            <span className="text-primary text-xs font-semibold">{initials}</span>
+          </button>
+          {dropdownOpen && (
+            <div className="absolute right-0 top-10 w-52 bg-[#1a1a24] border border-white/[0.08] rounded-xl shadow-xl z-50 overflow-hidden">
+              <div className="px-4 py-3 border-b border-white/[0.06]">
+                <p className="text-sm font-medium text-foreground truncate">{user?.full_name || "Admin"}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </div>
+              <Link to="/settings" onClick={() => setDropdownOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-colors">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
+              <button onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/[0.08] transition-colors">
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

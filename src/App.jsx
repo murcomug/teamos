@@ -14,6 +14,8 @@ import Departments from './pages/Departments';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
+import MemberLogin from './pages/MemberLogin';
+import MemberPortal from './pages/MemberPortal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,8 +48,10 @@ const AuthenticatedApp = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<PageNotFound />} />
       </Route>
+      <Route path="/member-login" element={<MemberLogin />} />
+      <Route path="/member-portal" element={<MemberPortal />} />
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };
