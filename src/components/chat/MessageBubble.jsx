@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Zap, CheckCircle2, AlertCircle, Loader2, ChevronRight, Clock } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import TaskCard from "../tasks/TaskCard";
 
 const FunctionDisplay = ({ toolCall }) => {
   const [expanded, setExpanded] = useState(false);
@@ -165,9 +166,25 @@ export default function MessageBubble({ message }) {
         )}
         
         {message.tool_calls?.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-1 mt-2">
             {message.tool_calls.map((toolCall, idx) => (
               <FunctionDisplay key={idx} toolCall={toolCall} />
+            ))}
+          </div>
+        )}
+        
+        {message.tasks?.length > 0 && (
+          <div className="space-y-2 mt-2">
+            {message.tasks.map((task) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                members={[]} 
+                allTasks={message.tasks}
+                onStatusChange={() => {}} 
+                onEdit={() => {}} 
+                onDelete={() => {}} 
+              />
             ))}
           </div>
         )}

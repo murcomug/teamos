@@ -33,11 +33,31 @@ export default function AgentChat() {
         setConversation(conv);
         setMessages(conv.messages || []);
 
-        // Subscribe to conversation updates
+        // Subscribe to conversation updates and extract task data from tool results
         const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
-          setMessages(data.messages || []);
+          const enrichedMessages = (data.messages || []).map(msg => {
+            if (msg.tool_calls?.length > 0) {
+              const tasks = [];
+              msg.tool_calls.forEach(call => {
+                if (call.name === 'Task.read' && call.results) {
+                  try {
+                    const result = typeof call.results === 'string' ? JSON.parse(call.results) : call.results;
+                    if (Array.isArray(result)) {
+                      tasks.push(...result);
+                    } else if (result && typeof result === 'object' && result.id) {
+                      tasks.push(result);
+                    }
+                  } catch (e) {
+                    // Ignore parsing errors
+                  }
+                }
+              });
+              return { ...msg, tasks: tasks.length > 0 ? tasks : undefined };
+            }
+            return msg;
+          });
+          setMessages(enrichedMessages);
         });
-        return unsubscribe;
       } catch (error) {
         console.error("Failed to initialize conversation:", error);
       }
