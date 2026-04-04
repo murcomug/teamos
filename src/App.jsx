@@ -18,7 +18,6 @@ import Settings from './pages/Settings';
 import CompletedItems from './pages/CompletedItems';
 import ActivityLog from './pages/ActivityLog';
 import MemberLogin from './pages/MemberLogin';
-import MemberPortal from './pages/MemberPortal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,7 +66,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/member-login" element={<MemberLogin />} />
-            <Route path="/member-portal" element={<MemberPortal />} />
+            <Route path="/member-portal" element={<MemberLogin />} />
             <Route path="*" element={<AuthenticatedApp />} />
           </Routes>
         </Router>
