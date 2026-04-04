@@ -88,7 +88,7 @@ export default function AgentChat() {
       : tasks.filter(t => t.assignee === memberSession?.name || t.department === memberSession?.department);
 
     const taskSummary = visibleTasks.slice(0, 20).map(t =>
-      `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'}`
+      `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
     ).join("\n");
 
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
@@ -192,10 +192,12 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
         // Strip markdown code fences
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
         // Extract the array - greedy match to get everything between [ and ]
-        const bracketMatch = raw.match(/\[(.+?)\]/);
+        const bracketMatch = raw.match(/\[(.+)\]/);
         if (bracketMatch) {
           // Split by comma, extract quoted strings and unquoted IDs
-          const arrayContent = bracketMatch[1];
+          let arrayContent = bracketMatch[1];
+          // Remove trailing brackets if nested
+          arrayContent = arrayContent.replace(/\]+$/, '');
           const idStrings = arrayContent
             .split(',')
             .map(s => {
