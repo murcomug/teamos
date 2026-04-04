@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import ReactMarkdown from "react-markdown";
 import { Loader2 } from "lucide-react";
 import MentionInput from "../components/chat/MentionInput";
-import MessageBubble from "../components/chat/MessageBubble";
+import ChatTaskCard from "../components/chat/ChatTaskCard";
 import TaskEditModal from "../components/shared/TaskEditModal";
 
 const quickPrompts = [
@@ -13,60 +14,51 @@ const quickPrompts = [
 ];
 
 export default function AgentChat() {
-  const [conversation, setConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
+  // Read member session for permission-scoped responses
+  const memberSession = (() => {
+    try { return JSON.parse(localStorage.getItem("memberSession") || "null"); } catch { return null; }
+  })();
+  const canCompanyWideReports = !memberSession || (memberSession.permissions || []).includes("company_wide_reports");
+
+  const [messages, setMessages] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const stored = localStorage.getItem("agentChatMessages");
+    const storedDate = localStorage.getItem("agentChatDate");
+    
+    if (stored && storedDate === today) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [{ role: "assistant", content: "👋 Welcome to **TeamOS Agent**. I can help you create tasks, check workloads, manage assignments, and generate reports. Try typing a command or use the quick prompts below." }];
+      }
+    }
+    
+    return [{ role: "assistant", content: "👋 Welcome to **TeamOS Agent**. I can help you create tasks, check workloads, manage assignments, and generate reports. Try typing a command or use the quick prompts below." }];
+  });
+  const [members, setMembers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const scrollRef = useRef(null);
 
-  // Initialize agent conversation on mount
+  // Save messages to localStorage whenever they change
   useEffect(() => {
-    const initConversation = async () => {
-      try {
-        const conv = await base44.agents.createConversation({
-          agent_name: "operations_lead",
-          metadata: {
-            name: "Agent Chat",
-            description: "Chat with operations lead AI",
-          }
-        });
-        setConversation(conv);
-        setMessages(conv.messages || []);
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem("agentChatMessages", JSON.stringify(messages));
+    localStorage.setItem("agentChatDate", today);
+  }, [messages]);
 
-        // Subscribe to conversation updates and extract task data from tool results
-        const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
-          const enrichedMessages = (data.messages || []).map(msg => {
-            if (msg.tool_calls?.length > 0) {
-              const tasks = [];
-              msg.tool_calls.forEach(call => {
-                if (call.name === 'Task.read' && call.results) {
-                  try {
-                    const result = typeof call.results === 'string' ? JSON.parse(call.results) : call.results;
-                    if (Array.isArray(result)) {
-                      tasks.push(...result);
-                    } else if (result && typeof result === 'object' && result.id) {
-                      tasks.push(result);
-                    }
-                  } catch (e) {
-                    // Ignore parsing errors
-                  }
-                }
-              });
-              return { ...msg, tasks: tasks.length > 0 ? tasks : undefined };
-            }
-            return msg;
-          });
-          setMessages(enrichedMessages);
-        });
-      } catch (error) {
-        console.error("Failed to initialize conversation:", error);
-      }
-    };
-
-    const unsubscribePromise = initConversation();
-    return () => {
-      unsubscribePromise.then(unsub => unsub?.());
-    };
+  useEffect(() => {
+    Promise.all([
+      base44.entities.TeamMember.list(),
+      base44.entities.Department.list(),
+      base44.entities.Task.list(),
+    ]).then(([m, d, t]) => {
+      setMembers(m);
+      setDepartments(d);
+      setTasks(t);
+    });
   }, []);
 
   useEffect(() => {
@@ -75,28 +67,140 @@ export default function AgentChat() {
 
   const handleStatusChange = async (id, status) => {
     await base44.entities.Task.update(id, { status });
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
   };
 
   const handleEditSave = async (form) => {
     if (editTask?.id) {
       await base44.entities.Task.update(editTask.id, form);
+      setTasks(tasks.map((t) => (t.id === editTask.id ? { ...t, ...form } : t)));
     }
   };
 
   const sendMessage = async (text) => {
-    if (!conversation) return;
+    const userMsg = { role: "user", content: text };
+    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
-    
-    try {
-      await base44.agents.addMessage(conversation, {
-        role: "user",
-        content: text
-      });
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    } finally {
-      setLoading(false);
+
+    // Scope visible tasks based on permissions
+    const visibleTasks = canCompanyWideReports
+      ? tasks
+      : tasks.filter(t => t.assignee === memberSession?.name || t.department === memberSession?.department);
+
+    const taskSummary = visibleTasks.slice(0, 20).map(t =>
+      `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'}`
+    ).join("\n");
+
+    const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
+    const deptSummary = departments.map(d => d.name).join(", ");
+
+    const scopeNote = canCompanyWideReports
+      ? ""
+      : `\n⚠️ IMPORTANT: This user does NOT have company-wide report access. Only show data related to their own tasks or their department (${memberSession?.department}). Politely refuse requests for company-wide stats or other departments' data.`;
+
+    const prompt = `You are TeamOS AI assistant that helps manage team operations. You have access to this data:
+
+TASKS:
+${taskSummary}
+
+TEAM: ${memberSummary}
+DEPARTMENTS: ${deptSummary}
+
+TODAY: ${new Date().toISOString().split("T")[0]}
+${scopeNote}
+
+TASK STATUS DEFINITIONS:
+- "open" or "active" tasks = status is pending OR ongoing
+- "completed" tasks = status is completed
+- "stopped" tasks = status is stopped
+
+User request: ${text}
+
+RESPONSE RULES:
+1. Determine if the user wants a TASK or SUPPORT TICKET:
+   - Use SUPPORT_TICKET_CREATE if the request includes keywords: "ticket", "support", "issue", "problem", "bug", "complaint", or is about customer/client concerns
+   - Use TASK_CREATE for operational/internal work items
+
+2. If creating a TASK (operational work): respond with JSON on a new line:
+TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
+
+3. If creating a SUPPORT TICKET (customer support, issue report): respond with JSON on a new line:
+SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
+
+4. **IF THE USER IS ASKING TO VIEW/LIST/FILTER TASKS** (keywords: "show", "list", "what are", "get", "open", "pending", "overdue", etc.):
+   - Filter the task list based on user criteria
+   - MANDATORY: End response with TASK_LIST:[id1,id2,id3] using matching task IDs
+   - Do NOT list task details in the text - let the cards display them
+   - Example: User: "Show me open tasks" → Your response: "Here are your open tasks:\n\nTASK_LIST:[abc,def,ghi]"
+
+5. Format response in markdown. Be concise and professional.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({ prompt });
+
+    let content = response;
+    let createdTask = null;
+
+    if (typeof content === "string" && content.includes("TASK_CREATE:")) {
+      const parts = content.split("TASK_CREATE:");
+      content = parts[0].trim();
+      try {
+        // Strip markdown code fences if LLM wrapped JSON in ```json ... ```
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        // Extract only the first JSON object
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const taskData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdTask = await base44.entities.Task.create(taskData);
+        setTasks((prev) => [createdTask, ...prev]);
+        content += "\n\n✅ Task created successfully!";
+      } catch (e) {
+        content += "\n\n⚠️ Could not auto-create the task. Please create it manually.";
+      }
+    } else if (typeof content === "string" && content.includes("SUPPORT_TICKET_CREATE:")) {
+      const parts = content.split("SUPPORT_TICKET_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const ticketData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdTask = await base44.entities.Task.create({ ...ticketData, is_support_ticket: true });
+        setTasks((prev) => [createdTask, ...prev]);
+        content += "\n\n✅ Support ticket created successfully!";
+      } catch (e) {
+        content += "\n\n⚠️ Could not auto-create the support ticket. Please create it manually.";
+      }
     }
+
+    let listedTasks = [];
+    if (typeof content === "string" && content.includes("TASK_LIST:")) {
+      const parts = content.split("TASK_LIST:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        // Extract array from text
+        const bracketMatch = raw.match(/\[[^\]]*\]/);
+        if (bracketMatch) {
+          const ids = JSON.parse(bracketMatch[0]);
+          listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+        }
+      } catch (e) {
+        console.error("Failed to parse TASK_LIST:", e);
+      }
+    }
+
+    const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content,
+        tasks: taskCards.length > 0 ? taskCards : undefined,
+      },
+    ]);
+    setLoading(false);
   };
 
   return (
@@ -119,7 +223,30 @@ export default function AgentChat() {
 
       <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4 pb-4">
         {messages.map((msg, idx) => (
-          <MessageBubble key={idx} message={msg} />
+          <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[85%] ${msg.role === "user" ? "ml-auto" : ""}`}>
+              <div className={`rounded-2xl px-4 py-3 ${
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
+              }`}>
+                {msg.role === "user" ? (
+                  <p className="text-sm">{msg.content}</p>
+                ) : (
+                  <ReactMarkdown className="text-sm prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-foreground/90 prose-strong:text-foreground prose-li:text-foreground/90">
+                    {msg.content}
+                  </ReactMarkdown>
+                )}
+              </div>
+              {msg.tasks && msg.tasks.length > 0 && msg.tasks.map((task, i) => task && (
+                <div key={task.id} className="flex items-start gap-2 mt-2">
+                  <span className="text-xs font-mono text-muted-foreground mt-4 w-5 text-right flex-shrink-0">{i + 1}.</span>
+                  <div className="flex-1">
+                    <ChatTaskCard task={task} members={members}
+                      onStatusChange={handleStatusChange} onEdit={setEditTask} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
         {loading && (
           <div className="flex justify-start">
@@ -132,7 +259,7 @@ export default function AgentChat() {
       </div>
 
       <div className="pt-4 border-t border-white/[0.06]">
-        <MentionInput onSend={sendMessage} members={[]} departments={[]} />
+        <MentionInput onSend={sendMessage} members={members} departments={departments} />
       </div>
 
       <TaskEditModal
@@ -140,9 +267,9 @@ export default function AgentChat() {
         onClose={() => setEditTask(null)}
         task={editTask}
         onSave={handleEditSave}
-        members={[]}
-        departments={[]}
-        allTasks={[]}
+        members={members}
+        departments={departments}
+        allTasks={tasks}
       />
     </div>
   );
