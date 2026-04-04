@@ -18,13 +18,19 @@ export default function MemberLogin() {
     setError("");
 
     try {
-      const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}&functions_version=${appParams.functionsVersion}`, {
+      const res = await fetch(`/api/functions/teamMemberAuth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login", email, password }),
+        body: JSON.stringify({ action: "login", email: email.toLowerCase().trim(), password }),
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        setError(data?.error || `Login failed (${res.status}). Please try again.`);
+        setLoading(false);
+        return;
+      }
 
       if (data?.success && data.member) {
         localStorage.setItem("memberSession", JSON.stringify(data.member));
