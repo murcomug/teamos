@@ -18,7 +18,7 @@ export default function MemberLogin() {
     setError("");
 
     try {
-      const res = await fetch(`/api/functions/teamMemberAuth`, {
+      const res = await fetch(`/api/functions/teamMemberAuth?app_id=${appParams.appId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "login", email: email.toLowerCase().trim(), password }),
