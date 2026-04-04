@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Search, Mail, Settings2 } from "lucide-react";
+import { Plus, Search, Mail, Settings2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,18 @@ export default function Team() {
     });
   }, []);
 
+  const getDefaultPermissions = (role) => {
+    if (role === "admin") {
+      return ["company_wide_reports", "manage_team", "manage_departments"];
+    }
+    return [];
+  };
+
+  const handleRoleChange = (newRole) => {
+    setForm({...form, role: newRole});
+    setFormPerms(getDefaultPermissions(newRole));
+  };
+
   const handleAdd = async () => {
     const colors = ["#2dd4bf", "#818cf8", "#f472b6", "#fb923c", "#a78bfa", "#34d399"];
     const created = await base44.entities.TeamMember.create({
@@ -44,6 +56,13 @@ export default function Team() {
     setShowAdd(false);
     setForm({ name: "", email: "", whatsapp: "", department: "", role: "" });
     setFormPerms([]);
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this team member?")) {
+      await base44.entities.TeamMember.delete(id);
+      setMembers(members.filter((m) => m.id !== id));
+    }
   };
 
   const handleSavePermissions = async () => {
@@ -132,6 +151,9 @@ export default function Team() {
               <button onClick={() => openPermissions(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Permissions">
                 <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
+              <button onClick={() => handleDelete(member.id)} className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors" title="Delete Member">
+                <Trash2 className="h-3.5 w-3.5 text-red-400" />
+              </button>
             </div>
           </div>
         ))}
@@ -155,6 +177,9 @@ export default function Team() {
                 </a>
                 <button onClick={() => openPermissions(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+                <button onClick={() => handleDelete(member.id)} className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors">
+                  <Trash2 className="h-3.5 w-3.5 text-red-400" />
                 </button>
               </div>
             </div>
@@ -207,8 +232,8 @@ export default function Team() {
               </Select>
             </div>
             <div>
-              <Label className="text-muted-foreground text-xs">Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({...form, role: v})}>
+             <Label className="text-muted-foreground text-xs">Role</Label>
+             <Select value={form.role} onValueChange={handleRoleChange}>
                 <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground">
                   <SelectValue />
                 </SelectTrigger>
