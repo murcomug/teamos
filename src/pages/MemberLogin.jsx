@@ -42,8 +42,9 @@ export default function MemberLogin() {
     setPortalLoading(false);
   }, []);
 
-  const loadTasks = async (memberData, retries = 3, delay = 500) => {
+  const loadTasks = async (memberData, retries = 3, delay = 1000) => {
     try {
+      await new Promise(resolve => setTimeout(resolve, 300));
       const memberTasks = await base44.entities.Task.filter({ assignee: memberData.name });
       setTasks(memberTasks || []);
     } catch (err) {
