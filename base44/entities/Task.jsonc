@@ -1,0 +1,54 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Title"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "pending",
+        "ongoing",
+        "stopped",
+        "completed"
+      ],
+      "default": "pending"
+    },
+    "priority": {
+      "type": "string",
+      "title": "Priority",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "default": "medium"
+    },
+    "assignee": {
+      "type": "string",
+      "title": "Assignee"
+    },
+    "department": {
+      "type": "string",
+      "title": "Department"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Due Date"
+    }
+  },
+  "required": [
+    "title",
+    "status",
+    "priority"
+  ]
+}

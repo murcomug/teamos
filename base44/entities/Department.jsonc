@@ -1,0 +1,25 @@
+{
+  "name": "Department",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "icon": {
+      "type": "string",
+      "title": "Icon Emoji"
+    },
+    "head": {
+      "type": "string",
+      "title": "Department Head"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

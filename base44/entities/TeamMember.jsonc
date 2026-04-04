@@ -1,0 +1,44 @@
+{
+  "name": "TeamMember",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "role": {
+      "type": "string",
+      "title": "Role"
+    },
+    "department": {
+      "type": "string",
+      "title": "Department"
+    },
+    "whatsapp": {
+      "type": "string",
+      "title": "WhatsApp"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "active",
+        "away"
+      ],
+      "default": "active"
+    },
+    "avatar_color": {
+      "type": "string",
+      "title": "Avatar Color"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "department"
+  ]
+}

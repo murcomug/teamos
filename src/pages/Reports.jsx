@@ -1,0 +1,113 @@
+import { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+const COLORS = ["#2dd4bf", "#818cf8", "#f472b6", "#fb923c", "#34d399"];
+
+export default function Reports() {
+  const [tasks, setTasks] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      base44.entities.Task.list(),
+      base44.entities.Department.list(),
+    ]).then(([t, d]) => {
+      setTasks(t);
+      setDepartments(d);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Data for charts
+  const statusData = ["pending", "ongoing", "stopped", "completed"].map((s) => ({
+    name: s.charAt(0).toUpperCase() + s.slice(1),
+    count: tasks.filter((t) => t.status === s).length,
+  }));
+
+  const deptData = departments.map((d) => ({
+    name: d.name.length > 12 ? d.name.slice(0, 12) + "…" : d.name,
+    tasks: tasks.filter((t) => t.department === d.name).length,
+  }));
+
+  const priorityData = ["critical", "high", "medium", "low"].map((p) => ({
+    name: p.charAt(0).toUpperCase() + p.slice(1),
+    value: tasks.filter((t) => t.priority === p).length,
+  }));
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload?.length) {
+      return (
+        <div className="glass-card rounded-lg px-3 py-2 text-xs">
+          <p className="text-foreground font-medium">{label}</p>
+          <p className="text-primary font-mono">{payload[0].value}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="space-y-6 max-w-7xl">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Reports</h1>
+        <p className="text-sm text-muted-foreground mt-1">Task analytics and team performance</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Task Status Chart */}
+        <div className="glass-card rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Tasks by Status</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={statusData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="name" tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
+              <YAxis tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="count" fill="hsl(174, 72%, 50%)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Priority Distribution */}
+        <div className="glass-card rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Priority Distribution</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={priorityData} cx="50%" cy="50%" innerRadius={60} outerRadius={100}
+                paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                {priorityData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Department Workload */}
+        <div className="glass-card rounded-xl p-5 lg:col-span-2">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Department Workload</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={deptData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis type="number" tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
+              <YAxis dataKey="name" type="category" width={100} tick={{ fill: "hsl(220, 15%, 55%)", fontSize: 11 }} axisLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="tasks" fill="hsl(174, 72%, 50%)" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}

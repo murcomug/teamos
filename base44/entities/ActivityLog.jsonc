@@ -1,0 +1,30 @@
+{
+  "name": "ActivityLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "title": "Action"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "user_name": {
+      "type": "string",
+      "title": "User Name"
+    },
+    "entity_type": {
+      "type": "string",
+      "title": "Entity Type"
+    },
+    "entity_id": {
+      "type": "string",
+      "title": "Entity ID"
+    }
+  },
+  "required": [
+    "action",
+    "description"
+  ]
+}
