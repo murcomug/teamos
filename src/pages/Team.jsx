@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Search, Mail, Settings2, Trash2 } from "lucide-react";
+import { Plus, Search, Mail, Settings2, Trash2, Edit3, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import UserAvatar from "../components/shared/UserAvatar";
 import PhoneInput from "../components/shared/PhoneInput";
 import PermissionsEditor from "../components/shared/PermissionsEditor";
+import EditMemberContactModal from "../components/shared/EditMemberContactModal";
+import ResetPasswordModal from "../components/shared/ResetPasswordModal";
 
 export default function Team() {
   const [members, setMembers] = useState([]);
@@ -18,6 +20,10 @@ export default function Team() {
   const [deptFilter, setDeptFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [editMember, setEditMember] = useState(null);
+  const [editContact, setEditContact] = useState(null);
+  const [resetPassword, setResetPassword] = useState(null);
+  const [tempPassword, setTempPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "", department: "", role: "operator" });
   const [formPerms, setFormPerms] = useState([]);
 
@@ -56,12 +62,15 @@ export default function Team() {
     setShowAdd(false);
     setForm({ name: "", email: "", whatsapp: "", department: "", role: "" });
     setFormPerms([]);
+    await base44.functions.invoke('logActivity', { action: 'TEAM_MEMBER_ADDED', description: `New team member "${form.name}" was added to ${form.department}`, entity_type: 'TeamMember', entity_id: created.id });
   };
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this team member?")) {
+      const member = members.find((m) => m.id === id);
       await base44.entities.TeamMember.delete(id);
       setMembers(members.filter((m) => m.id !== id));
+      await base44.functions.invoke('logActivity', { action: 'TEAM_MEMBER_DELETED', description: `Team member "${member?.name}" was deleted`, entity_type: 'TeamMember', entity_id: id });
     }
   };
 
@@ -74,6 +83,25 @@ export default function Team() {
   const openPermissions = (member) => {
     setEditMember(member);
     setFormPerms(member.permissions || []);
+  };
+
+  const handleSaveContact = async (contactData) => {
+    await base44.entities.TeamMember.update(editContact.id, contactData);
+    setMembers(members.map((m) => (m.id === editContact.id ? { ...m, ...contactData } : m)));
+  };
+
+  const handleResetPassword = async (member) => {
+    setResettingPassword(true);
+    try {
+      const response = await base44.functions.invoke('resetTeamMemberPassword', { memberId: member.id });
+      setResetPassword(member);
+      setTempPassword(response.data.tempPassword);
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      alert('Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   const filtered = members
@@ -145,6 +173,12 @@ export default function Team() {
               {member.status === "active" ? "Active" : "Away"}
             </span>
             <div className="flex items-center gap-1">
+              <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Edit Contact Info">
+                <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+              <button onClick={() => handleResetPassword(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors" title="Reset Password">
+                <Lock className="h-3.5 w-3.5 text-amber-400" />
+              </button>
               <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
               </a>
@@ -172,6 +206,12 @@ export default function Team() {
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => setEditContact(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                  <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+                <button onClick={() => handleResetPassword(member)} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
+                  <Lock className="h-3.5 w-3.5 text-amber-400" />
+                </button>
                 <a href={`mailto:${member.email}`} className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors">
                   <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 </a>
@@ -277,6 +317,23 @@ export default function Team() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Contact Info Modal */}
+      <EditMemberContactModal
+        open={!!editContact}
+        onClose={() => setEditContact(null)}
+        member={editContact}
+        onSave={handleSaveContact}
+      />
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        open={!!resetPassword}
+        onClose={() => { setResetPassword(null); setTempPassword(""); }}
+        member={resetPassword}
+        tempPassword={tempPassword}
+        loading={resettingPassword}
+      />
     </div>
   );
 }
