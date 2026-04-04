@@ -13,7 +13,7 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete, membe
     <div className="glass-card rounded-xl p-4 glass-card-hover transition-all duration-200 group">
       <div className="flex items-start justify-between mb-3">
         <PriorityBadge priority={task.priority} />
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+        <div className="flex items-center gap-1 transition-all">
           <button
             onClick={() => onEdit(task)}
             className="p-1.5 rounded-md hover:bg-white/[0.06] transition-all"

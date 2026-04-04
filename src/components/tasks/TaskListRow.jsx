@@ -74,13 +74,13 @@ export default function TaskListRow({ task, onStatusChange, onEdit, onDelete, me
       <div className="flex items-center gap-1">
         <button
           onClick={() => onEdit(task)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-white/[0.06] transition-all flex-shrink-0"
+          className="p-1.5 rounded-md hover:bg-white/[0.06] transition-all flex-shrink-0"
         >
           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
         <button
           onClick={() => onDelete(task.id)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-500/10 transition-all flex-shrink-0"
+          className="p-1.5 rounded-md hover:bg-red-500/10 transition-all flex-shrink-0"
         >
           <Trash2 className="h-3.5 w-3.5 text-red-400" />
         </button>
