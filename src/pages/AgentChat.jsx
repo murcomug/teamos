@@ -179,18 +179,14 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
       try {
         let raw = parts[1].trim();
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
-        // Extract array from text - more permissive regex
-        const bracketMatch = raw.match(/\[.*?\]/s);
-        if (bracketMatch) {
-          // Clean up the array string - remove newlines, extra spaces
-          let cleanedArray = bracketMatch[0]
-            .replace(/\s+/g, ' ')
-            .replace(/,\s*]/g, ']')
-            .replace(/\[\s*\]/g, '[]');
-          const ids = JSON.parse(cleanedArray);
-          if (Array.isArray(ids)) {
-            listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
-          }
+        // Extract array from text - match [...] more carefully
+        const bracketMatch = raw.match(/\[([^\[\]]*)\]/);
+        if (bracketMatch && bracketMatch[1]) {
+          // Split by comma and filter empty strings
+          const idStrings = bracketMatch[1].split(',').map(s => s.trim()).filter(s => s.length > 0);
+          listedTasks = idStrings
+            .map(id => tasks.find(t => t.id === id))
+            .filter(Boolean);
         }
       } catch (e) {
         console.error("Failed to parse TASK_LIST:", e);
