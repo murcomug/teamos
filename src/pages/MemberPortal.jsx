@@ -24,6 +24,7 @@ export default function MemberPortal() {
   const hasPermission = (perm) => memberSession?.permissions?.includes(perm);
 
   const navLinks = [
+    { label: "My Tasks", href: "#tasks", icon: CheckSquare },
     { label: "Agent Chat", href: "/member-chat", icon: MessageSquare },
     ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: Users }] : []),
     ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: Building2 }] : []),
