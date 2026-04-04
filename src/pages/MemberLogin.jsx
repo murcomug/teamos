@@ -49,6 +49,9 @@ export default function MemberLogin() {
     } catch (err) {
       console.error("Error loading tasks:", err);
       setTasks([]);
+      if (err?.message?.includes('rate limit')) {
+        setError('System is busy. Your tasks will load when ready.');
+      }
     }
   };
 
