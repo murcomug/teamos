@@ -93,12 +93,16 @@ ${scopeNote}
 User request: ${text}
 
 RESPONSE RULES:
-1. If creating a TASK (operational work): respond with JSON on a new line:
+1. Determine if the user wants a TASK or SUPPORT TICKET:
+   - Use SUPPORT_TICKET_CREATE if the request includes keywords: "ticket", "support", "issue", "problem", "bug", "complaint", or is about customer/client concerns
+   - Use TASK_CREATE for operational/internal work items
+
+2. If creating a TASK (operational work): respond with JSON on a new line:
 TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
-2. If creating a SUPPORT TICKET (customer support, issue report): respond with JSON on a new line:
+3. If creating a SUPPORT TICKET (customer support, issue report): respond with JSON on a new line:
 SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
-3. If listing/showing tasks (open, overdue, by status, etc.): ALWAYS end with TASK_LIST:[ID1,ID2,ID3,...] using task IDs from above. Never describe task details in text.
-4. Format response in markdown. Be concise and professional.`;
+4. If listing/showing tasks (open, overdue, by status, etc.): ALWAYS end with TASK_LIST:[ID1,ID2,ID3,...] using task IDs from above. Never describe task details in text.
+5. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
