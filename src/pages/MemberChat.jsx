@@ -1,13 +1,11 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useMemberSession } from "@/lib/MemberSessionContext";
 import ReactMarkdown from "react-markdown";
-import { Loader2, Menu, X, LogOut } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import MentionInput from "../components/chat/MentionInput";
 import ChatTaskCard from "../components/chat/ChatTaskCard";
 import TaskEditModal from "../components/shared/TaskEditModal";
-import UserAvatar from "../components/shared/UserAvatar";
+import { useMemberSession } from "@/lib/MemberSessionContext";
 
 const quickPrompts = [
   "Create a support ticket",
@@ -15,20 +13,12 @@ const quickPrompts = [
   "Show me my workload",
 ];
 
-export default function MemberChat() {
-  const navigate = useNavigate();
+export default function MemberChatContent() {
   const { memberSession } = useMemberSession();
-
-  useEffect(() => {
-    if (!memberSession) {
-      navigate("/member-login");
-    }
-  }, [memberSession, navigate]);
 
   const userId = memberSession?.id || "guest";
   const messageCacheKey = `memberChatMessages_${userId}`;
   const dateCacheKey = `memberChatDate_${userId}`;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [messages, setMessages] = useState(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -53,14 +43,12 @@ export default function MemberChat() {
   const [editTask, setEditTask] = useState(null);
   const scrollRef = useRef(null);
 
-  // Save messages to localStorage whenever they change
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem(messageCacheKey, JSON.stringify(messages));
     localStorage.setItem(dateCacheKey, today);
   }, [messages, messageCacheKey, dateCacheKey]);
 
-  // Load data
   useEffect(() => {
     if (!memberSession) return;
     
@@ -91,16 +79,11 @@ export default function MemberChat() {
     }
   };
 
-  const handleLogout = () => {
-    navigate("/member-login");
-  };
-
   const sendMessage = async (text) => {
     const userMsg = { role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
-    // Only show member's own tasks
     const taskSummary = tasks.slice(0, 20).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
     ).join("\n");
@@ -199,93 +182,64 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
     setLoading(false);
   };
 
-  if (!memberSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0a0f" }}>
-        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex" style={{ background: "#0a0a0f" }}>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-6 border-b border-white/[0.06]"
-        style={{ background: "rgba(10, 10, 18, 0.95)", backdropFilter: "blur(12px)" }}>
-        <div className="flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-1.5 hover:bg-white/[0.05] rounded-lg">
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+    <div className="flex flex-col h-full max-w-4xl mx-auto w-full px-4 py-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Agent Chat</h1>
+          <p className="text-sm text-muted-foreground mt-1">AI-powered task management</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {quickPrompts.map((prompt) => (
+          <button key={prompt} onClick={() => sendMessage(prompt)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-primary hover:border-primary/30 transition-all">
+            {prompt}
           </button>
-          <div>
-            <p className="text-sm font-semibold text-foreground">Agent Chat</p>
-            <p className="text-xs text-muted-foreground">{memberSession.name}</p>
-          </div>
-        </div>
-        
-        <button onClick={handleLogout}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-white/[0.06] transition-all">
-          <LogOut className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
-      </header>
+        ))}
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col pt-16">
-        <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-6">
-          {/* Quick Prompts */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {quickPrompts.map((prompt) => (
-              <button key={prompt} onClick={() => sendMessage(prompt)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] border border-white/[0.06] text-muted-foreground hover:text-primary hover:border-primary/30 transition-all">
-                {prompt}
-              </button>
-            ))}
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4 pb-4">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] ${msg.role === "user" ? "ml-auto" : ""}`}>
-                  <div className={`rounded-2xl px-4 py-3 ${
-                    msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
-                  }`}>
-                    {msg.role === "user" ? (
-                      <p className="text-sm">{msg.content}</p>
-                    ) : (
-                      <ReactMarkdown className="text-sm prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-foreground/90 prose-strong:text-foreground prose-li:text-foreground/90">
-                        {msg.content}
-                      </ReactMarkdown>
-                    )}
+      <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4 pb-4">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[85%] ${msg.role === "user" ? "ml-auto" : ""}`}>
+              <div className={`rounded-2xl px-4 py-3 ${
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
+              }`}>
+                {msg.role === "user" ? (
+                  <p className="text-sm">{msg.content}</p>
+                ) : (
+                  <ReactMarkdown className="text-sm prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-foreground/90 prose-strong:text-foreground prose-li:text-foreground/90">
+                    {msg.content}
+                  </ReactMarkdown>
+                )}
+              </div>
+              {msg.tasks && msg.tasks.length > 0 && msg.tasks.map((task, i) => task && (
+                <div key={task.id} className="flex items-start gap-2 mt-2">
+                  <span className="text-xs font-mono text-muted-foreground mt-4 w-5 text-right flex-shrink-0">{i + 1}.</span>
+                  <div className="flex-1">
+                    <ChatTaskCard task={task} members={members}
+                      onStatusChange={handleStatusChange} onEdit={setEditTask} />
                   </div>
-                  {msg.tasks && msg.tasks.length > 0 && msg.tasks.map((task, i) => task && (
-                    <div key={task.id} className="flex items-start gap-2 mt-2">
-                      <span className="text-xs font-mono text-muted-foreground mt-4 w-5 text-right flex-shrink-0">{i + 1}.</span>
-                      <div className="flex-1">
-                        <ChatTaskCard task={task} members={members}
-                          onStatusChange={handleStatusChange} onEdit={setEditTask} />
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="glass-card rounded-2xl px-4 py-3">
-                  <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                </div>
-              </div>
-            )}
-            <div ref={scrollRef} />
+              ))}
+            </div>
           </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="glass-card rounded-2xl px-4 py-3">
+              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            </div>
+          </div>
+        )}
+        <div ref={scrollRef} />
+      </div>
 
-          {/* Input */}
-          <div className="pt-4 border-t border-white/[0.06]">
-            <MentionInput onSend={sendMessage} members={members} departments={departments} />
-          </div>
-        </div>
-      </main>
+      <div className="pt-4 border-t border-white/[0.06]">
+        <MentionInput onSend={sendMessage} members={members} departments={departments} />
+      </div>
 
       <TaskEditModal
         open={!!editTask}
