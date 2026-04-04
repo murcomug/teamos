@@ -69,6 +69,15 @@ export default function MemberNotifications() {
     }
   };
 
+  const handleDeleteNotification = async (id) => {
+    try {
+      await base44.entities.Notification.delete(id);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -120,9 +129,17 @@ export default function MemberNotifications() {
                       {moment(notif.created_date).fromNow()}
                     </span>
                   </div>
-                  {!notif.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {!notif.read && (
+                      <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                    )}
+                    <button
+                      onClick={() => handleDeleteNotification(notif.id)}
+                      className="text-xs text-muted-foreground hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-white/[0.06]"
+                    >
+                      Unflag
+                    </button>
+                  </div>
                 </div>
               </div>
             );
