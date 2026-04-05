@@ -31,6 +31,7 @@ import MemberDepartmentsContent from './pages/MemberDepartments';
 import MemberReportsContent from './pages/MemberReports';
 import MemberERP from './pages/MemberERP';
 import SalesERP from './pages/SalesERP';
+import AgentManagement from './pages/AgentManagement';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
         <Route path="/activity-log" element={<ActivityLog />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/sales-erp" element={<SalesERP />} />
+        <Route path="/agent-management" element={<AgentManagement />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
