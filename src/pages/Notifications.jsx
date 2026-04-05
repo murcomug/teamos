@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Bell, AlertTriangle, CheckCircle, Info, AlertCircle } from "lucide-react";
 import moment from "moment";
+
+function getNotificationLink(notif) {
+  const text = `${notif.title} ${notif.message}`.toLowerCase();
+  if (text.includes("support ticket") || text.includes("ticket")) return "/support-tickets";
+  if (text.includes("sales follow") || text.includes("sales agent") || text.includes("crm") || text.includes("customer") || text.includes("interaction")) return "/sales-erp";
+  if (text.includes("task") || text.includes("follow-up") || text.includes("follow up")) return "/tasks";
+  return null;
+}
 
 const typeConfig = {
   info: { icon: Info, color: "text-blue-400", bg: "bg-blue-500/10" },
@@ -11,6 +20,7 @@ const typeConfig = {
 };
 
 export default function Notifications() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +72,7 @@ export default function Notifications() {
           const config = typeConfig[notif.type] || typeConfig.info;
           const Icon = config.icon;
           return (
-            <button key={notif.id} onClick={() => markRead(notif.id)}
+            <button key={notif.id} onClick={async () => { await markRead(notif.id); const link = getNotificationLink(notif); if (link) navigate(link); }}
               className={`w-full text-left glass-card rounded-xl p-4 transition-all duration-200 hover:bg-white/[0.04] ${!notif.read ? "border-l-2 border-l-primary" : "opacity-60"}`}>
               <div className="flex items-start gap-3">
                 <div className={`mt-0.5 h-8 w-8 rounded-lg ${config.bg} flex items-center justify-center flex-shrink-0`}>

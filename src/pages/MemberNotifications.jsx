@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useMemberSession } from "@/lib/MemberSessionContext";
 import { Bell, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import moment from "moment";
 import { Button } from "@/components/ui/button";
+
+function getNotificationLink(notif) {
+  const text = `${notif.title} ${notif.message}`.toLowerCase();
+  if (text.includes("support ticket") || text.includes("ticket")) return "/member-support-tickets";
+  if (text.includes("sales follow") || text.includes("sales agent") || text.includes("crm") || text.includes("customer") || text.includes("interaction")) return "/member-erp";
+  if (text.includes("task") || text.includes("follow-up") || text.includes("follow up")) return "/member-tasks";
+  return null;
+}
 
 const typeConfig = {
   info: { icon: Info, color: "text-blue-400", bg: "bg-blue-400/10" },
@@ -13,6 +22,7 @@ const typeConfig = {
 };
 
 export default function MemberNotifications() {
+  const navigate = useNavigate();
   const { memberSession } = useMemberSession();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +126,7 @@ export default function MemberNotifications() {
                 className={`glass-card glass-card-hover rounded-xl p-4 transition-all cursor-pointer ${
                   !notif.read ? "border-primary/30 bg-primary/5" : ""
                 }`}
-                onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                onClick={async () => { if (!notif.read) await handleMarkAsRead(notif.id); const link = getNotificationLink(notif); if (link) navigate(link); }}
               >
                 <div className="flex items-start gap-4">
                   <div className={`p-2 rounded-lg ${config.bg} flex-shrink-0`}>
