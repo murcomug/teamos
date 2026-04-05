@@ -90,14 +90,16 @@ export default function AgentChat() {
     setLoading(true);
 
     // Extract @ mentions
-    const mentionMatches = text.match(/@([^@,\.]+)/g) || [];
+    const mentionMatches = text.match(/@([\w\s]+?)(?=\s@|\s{2}|$|[,.])/g) || text.match(/@([^@]+)/g) || [];
     const mentionedName = mentionMatches.length > 0 ? mentionMatches[0].substring(1).trim() : null;
+    const mentionNote = mentionedName ? `\n\nIMPORTANT: The user mentioned "@${mentionedName}" — use this exact name as the assignee in any task/ticket you create.` : "";
 
+    // Scope visible tasks based on permissions
     const visibleTasks = canCompanyWideReports
       ? tasks
       : tasks.filter(t => t.assignee === memberSession?.name || t.department === memberSession?.department);
 
-    const taskSummary = visibleTasks.slice(0, 30).map(t =>
+    const taskSummary = visibleTasks.slice(0, 20).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
     ).join("\n");
 
@@ -107,124 +109,168 @@ export default function AgentChat() {
       `ID:${c.id} name:"${c.name}" company:"${c.company || ''}" email:"${c.email || ''}" stage:${c.sales_stage || 'lead'} rep:"${c.assigned_sales_rep || ''}"`
     ).join("\n");
 
-    const scopeNote = canCompanyWideReports ? "" :
-      `This user does NOT have company-wide report access. Only include data for their tasks or department (${memberSession?.department}).`;
+    const scopeNote = canCompanyWideReports
+      ? ""
+      : `\n⚠️ IMPORTANT: This user does NOT have company-wide report access. Only show data related to their own tasks or their department (${memberSession?.department}). Politely refuse requests for company-wide stats or other departments' data.`;
 
-    const historyMessages = messages.slice(-10)
+    // Build conversation history for context (last 10 messages)
+    const historyMessages = messages.slice(-10);
+    const conversationHistory = historyMessages
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n');
 
-    const prompt = `You are TeamOS AI assistant helping manage team operations.
+    const prompt = `You are TeamOS AI assistant that helps manage team operations. Your PRIMARY job is to TAKE ACTION when asked.
 
+WORK ITEM TYPES:
+- Tasks: operational/internal work (proactive)
+- Support Tickets: customer issues/bugs/complaints (reactive) — is_support_ticket: true
+
+DATA:
 TASKS:
-${taskSummary || 'No tasks.'}
+${taskSummary}
 
 TEAM: ${memberSummary}
 DEPARTMENTS: ${deptSummary}
 
 CUSTOMERS:
-${customerSummary || 'No customers.'}
+${customerSummary || 'No customers yet.'}
 
-TODAY: ${new Date().toISOString().split('T')[0]}
-${scopeNote}
-${mentionedName ? `MENTION: The user mentioned "@${mentionedName}" — use this as the assignee for any created task/ticket.` : ''}
+TODAY: ${new Date().toISOString().split("T")[0]}
+${scopeNote}${mentionNote}
 
 CONVERSATION HISTORY:
-${historyMessages || 'None.'}
+${conversationHistory || 'No prior conversation.'}
 
 User request: ${text}
 
-Respond ONLY with a JSON object. Rules:
-- "text": your natural language reply (markdown ok, concise)
-- "intent": one of: list_tasks | create_task | create_ticket | create_customer | update_customer | list_customers | log_interaction | general
-- "task_ids": array of task IDs to display as cards (for list_tasks intent). ONLY include IDs — do NOT describe tasks in "text".
-- "customer_ids": array of customer IDs to display as cards (for list_customers intent)
-- "create_task": task object if intent is create_task {title, description, status, priority, assignee, department, due_date}
-- "create_ticket": ticket object if intent is create_ticket {title, description, status, priority, assignee, department}
-- "create_customer": customer object if intent is create_customer {name, company, email, phone, sales_stage, assigned_sales_rep}
-- "update_customer": object with id + fields to update if intent is update_customer
-- "log_interaction": object if logging a sales interaction {customer_id, interaction_type, summary, date, sales_rep}
+CRITICAL DECISION RULES — follow in ORDER, stop at first match:
 
-For list intent: choose ALL matching task IDs from the TASKS list above. For create intent: do NOT include task_ids.`;
+RULE 1 — CREATE INTENT (highest priority): If message contains ANY of: "create", "new", "add", "make", "log", "open", "raise", "submit", "need a", "want a" — this is ALWAYS a CREATE action. NEVER respond with TASK_LIST for a create request. Derive a title from context if none given.
+  "ticket", "support", "issue", "problem", "bug", "complaint", "error", "defect" → SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":null}
+  Everything else → TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":null}
 
-    const responseSchema = {
-      type: "object",
-      properties: {
-        text: { type: "string" },
-        intent: { type: "string" },
-        task_ids: { type: "array", items: { type: "string" } },
-        customer_ids: { type: "array", items: { type: "string" } },
-        create_task: { type: "object" },
-        create_ticket: { type: "object" },
-        create_customer: { type: "object" },
-        update_customer: { type: "object" },
-        log_interaction: { type: "object" },
-      },
-      required: ["text", "intent"]
-    };
+RULE 2 — VIEW/LIST INTENT: ONLY if NO create keyword present AND message has "show", "list", "what", "get", "view", "find", "overdue", "pending", "open", "my tasks" — respond with TASK_LIST:[id1,id2,...]. CRITICAL: When using TASK_LIST, your ENTIRE text response before the command must be ONE short sentence only (e.g. "Here are your open tasks:"). Do NOT list task titles, IDs, or details in the text — the cards will display them automatically.
+  Ticket-specific ("ticket","issue","support") → filter is_support_ticket true only
+  Task-specific ("task","work","assignment") → filter is_support_ticket false/null only
 
-    const response = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: responseSchema
-    });
+RULE 3 — CUSTOMER CREATE: "new customer", "add lead", "new lead" → CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"..."}
 
-    let displayText = response.text || "";
+RULE 4 — CUSTOMER LIST: "show customers", "view pipeline", "list leads" → CUSTOMER_LIST:[id1,id2,...]
+
+RULE 5 — AMBIGUITY: Only ask for clarification if intent is genuinely impossible to determine after all rules. NEVER ask twice in a row.
+
+Format response in markdown. Be concise and professional.`;
+
+    const response = await base44.integrations.Core.InvokeLLM({ prompt });
+
+    let content = response;
     let createdTask = null;
-    let createdCustomer = null;
 
-    // Handle creates
-    if (response.create_task?.title) {
-      const data = { ...response.create_task, ...(mentionedName ? { assignee: mentionedName } : {}) };
-      createdTask = await base44.entities.Task.create(data);
-      setTasks(prev => [createdTask, ...prev]);
-      displayText += "\n\n✅ Task created successfully!";
-    } else if (response.create_ticket?.title) {
-      const data = { ...response.create_ticket, is_support_ticket: true, ...(mentionedName ? { assignee: mentionedName } : {}) };
-      createdTask = await base44.entities.Task.create(data);
-      setTasks(prev => [createdTask, ...prev]);
-      displayText += "\n\n✅ Support ticket created successfully!";
-    }
-
-    if (response.create_customer?.name) {
-      createdCustomer = await base44.entities.CustomerProfile.create(response.create_customer);
-      setCustomers(prev => [createdCustomer, ...prev]);
-      displayText += "\n\n✅ Customer profile created!";
-    }
-
-    if (response.update_customer) {
-      const { id, ...updates } = response.update_customer;
-      if (id) {
-        await base44.entities.CustomerProfile.update(id, updates);
-        setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
-        displayText += "\n\n✅ Customer updated!";
+    if (typeof content === "string" && content.includes("TASK_CREATE:")) {
+      const parts = content.split("TASK_CREATE:");
+      content = parts[0].replace(/```[\s\S]*?```/g, "").replace(/\{[\s\S]*?\}/g, "").trim();
+      try {
+        // Strip markdown code fences if LLM wrapped JSON in ```json ... ```
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        // Extract only the first JSON object
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const taskData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        const finalTaskData = { ...taskData, ...(mentionedName ? { assignee: mentionedName } : {}) };
+        createdTask = await base44.entities.Task.create(finalTaskData);
+        setTasks((prev) => [createdTask, ...prev]);
+        content += "\n\n✅ Task created successfully!";
+      } catch (e) {
+        content += "\n\n⚠️ Could not auto-create the task. Please create it manually.";
+      }
+    } else if (typeof content === "string" && content.includes("SUPPORT_TICKET_CREATE:")) {
+      const parts = content.split("SUPPORT_TICKET_CREATE:");
+      content = parts[0].replace(/```[\s\S]*?```/g, "").replace(/\{[\s\S]*?\}/g, "").trim();
+      try {
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const ticketData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        const finalTicketData = { ...ticketData, is_support_ticket: true, ...(mentionedName ? { assignee: mentionedName } : {}) };
+        createdTask = await base44.entities.Task.create(finalTicketData);
+        setTasks((prev) => [createdTask, ...prev]);
+        content += "\n\n✅ Support ticket created successfully!";
+      } catch (e) {
+        content += "\n\n⚠️ Could not auto-create the support ticket. Please create it manually.";
       }
     }
 
-    if (response.log_interaction?.summary && response.log_interaction?.customer_id) {
-      await base44.entities.SalesInteraction.create(response.log_interaction);
-      displayText += "\n\n✅ Interaction logged!";
+    // CUSTOMER_CREATE
+    let createdCustomer = null;
+    if (typeof content === "string" && content.includes("CUSTOMER_CREATE:")) {
+      const parts = content.split("CUSTOMER_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const data = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdCustomer = await base44.entities.CustomerProfile.create(data);
+        setCustomers(prev => [createdCustomer, ...prev]);
+        content += "\n\n✅ Customer profile created!";
+      } catch { content += "\n\n⚠️ Could not create the customer profile."; }
     }
 
-    // Map IDs to task/customer objects
-    const listedTasks = (response.task_ids || []).map(id => tasks.find(t => t.id === id)).filter(Boolean);
-    const listedCustomers = (response.customer_ids || []).map(id => customers.find(c => c.id === id)).filter(Boolean);
+    // CUSTOMER_LIST
+    let listedCustomers = [];
+    if (typeof content === "string" && content.includes("CUSTOMER_LIST:")) {
+      const parts = content.split("CUSTOMER_LIST:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const bracketMatch = raw.match(/\[(.+)\]/);
+        if (bracketMatch) {
+          const ids = bracketMatch[1].split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).filter(Boolean);
+          listedCustomers = ids.map(id => customers.find(c => c.id === id)).filter(Boolean);
+        }
+      } catch {}
+      if (listedCustomers.length === 0) content += "\n\n*No customers match that request.*";
+    }
+
+    let listedTasks = [];
+    if (typeof content === "string" && content.includes("TASK_LIST:")) {
+      const parts = content.split("TASK_LIST:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim();
+        raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const bracketMatch = raw.match(/\[(.+)\]/);
+        if (bracketMatch) {
+          let arrayContent = bracketMatch[1].replace(/\]+$/, '');
+          const idStrings = arrayContent.split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).filter(s => s.length > 0);
+          listedTasks = idStrings.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+        }
+      } catch (e) {}
+      if (listedTasks.length === 0) content += "\n\n*No open tasks match that request.*";
+    } else if (typeof content === "string" && /ID:\s*[a-f0-9]{24}/i.test(content)) {
+      // Fallback: LLM output plain text with IDs — auto-extract them into cards
+      const idMatches = [...content.matchAll(/ID:\s*([a-f0-9]{24})/gi)];
+      const ids = idMatches.map(m => m[1]);
+      listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+      // Strip the ID list from the text
+      content = content.replace(/\n?ID:.*\n?/gi, "").replace(/\n{3,}/g, "\n\n").trim();
+    }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
     const customerCards = createdCustomer ? [createdCustomer, ...listedCustomers] : listedCustomers;
 
-    if (listedTasks.length === 0 && response.intent === 'list_tasks' && !createdTask) {
-      displayText += "\n\n*No tasks match that request.*";
-    }
-    if (listedCustomers.length === 0 && response.intent === 'list_customers' && !createdCustomer) {
-      displayText += "\n\n*No customers match that request.*";
-    }
+    // Final cleanup: strip any remaining JSON blocks or code fences from displayed content
+    content = content
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/\{[\s\S]*\}/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
 
-    setMessages(prev => [
+    setMessages((prev) => [
       ...prev,
       {
         role: "assistant",
-        content: displayText.trim(),
+        content,
         tasks: taskCards.length > 0 ? taskCards : undefined,
         customerCards: customerCards.length > 0 ? customerCards : undefined,
       },
