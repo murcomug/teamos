@@ -174,12 +174,12 @@ For list intent: choose ALL matching task IDs from the TASKS list above. For cre
     let createdCustomer = null;
 
     // Handle creates
-    if (response.create_task) {
+    if (response.create_task?.title) {
       const data = { ...response.create_task, ...(mentionedName ? { assignee: mentionedName } : {}) };
       createdTask = await base44.entities.Task.create(data);
       setTasks(prev => [createdTask, ...prev]);
       displayText += "\n\n✅ Task created successfully!";
-    } else if (response.create_ticket) {
+    } else if (response.create_ticket?.title) {
       const data = { ...response.create_ticket, is_support_ticket: true, ...(mentionedName ? { assignee: mentionedName } : {}) };
       createdTask = await base44.entities.Task.create(data);
       setTasks(prev => [createdTask, ...prev]);
