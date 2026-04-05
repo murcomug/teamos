@@ -115,66 +115,47 @@ export default function AgentChat() {
       .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n');
 
-    const prompt = `You are TeamOS AI assistant that helps manage team operations and support requests. You handle two distinct types of work items.
+    const prompt = `You are TeamOS AI assistant that helps manage team operations. Your PRIMARY job is to TAKE ACTION when asked.
 
-**WORK ITEM TYPES:**
-- **Tasks**: Operational work, internal projects, assignments, or general work items representing proactive work
-- **Support Tickets**: Customer issues, bug reports, problem reports, complaints, or support requests representing reactive work
-  (Note: Both are stored as Task entities, but tickets have is_support_ticket: true)
+WORK ITEM TYPES:
+- Tasks: operational/internal work (proactive)
+- Support Tickets: customer issues/bugs/complaints (reactive) — is_support_ticket: true
 
-You have access to this data:
-
+DATA:
 TASKS:
 ${taskSummary}
 
 TEAM: ${memberSummary}
 DEPARTMENTS: ${deptSummary}
 
-CUSTOMERS (CRM):
+CUSTOMERS:
 ${customerSummary || 'No customers yet.'}
 
 TODAY: ${new Date().toISOString().split("T")[0]}
 ${scopeNote}
 
-TASK STATUS DEFINITIONS:
-- "open" or "active" tasks = status is pending OR ongoing
-- "completed" tasks = status is completed
-- "stopped" tasks = status is stopped
-
-CONVERSATION HISTORY (use this for context and to understand what the user has been working on):
+CONVERSATION HISTORY:
 ${conversationHistory || 'No prior conversation.'}
 
 User request: ${text}
 
-RESPONSE RULES:
-1. **CATEGORIZATION - Determine if the user wants a TASK or SUPPORT TICKET:**
-   - Use SUPPORT_TICKET_CREATE for: "ticket", "support", "issue", "problem", "bug", "complaint", "error", "defect", or customer/client concerns
-   - Use TASK_CREATE for: "task", "work item", "project", "assignment", "create", or operational/internal work
-   - When in doubt, prioritize based on keywords and context of the request
+CRITICAL DECISION RULES — follow in ORDER, stop at first match:
 
-2. **If creating a TASK (operational work)**: respond with JSON on a new line:
-TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
+RULE 1 — CREATE INTENT (highest priority): If message contains ANY of: "create", "new", "add", "make", "log", "open", "raise", "submit", "need a", "want a" — this is ALWAYS a CREATE action. NEVER respond with TASK_LIST for a create request. Derive a title from context if none given.
+  "ticket", "support", "issue", "problem", "bug", "complaint", "error", "defect" → SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":null}
+  Everything else → TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":null}
 
-3. **If creating a SUPPORT TICKET (issue/problem report)**: respond with JSON on a new line:
-SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":"YYYY-MM-DD"}
+RULE 2 — VIEW/LIST INTENT: ONLY if NO create keyword present AND message has "show", "list", "what", "get", "view", "find", "overdue", "pending", "open", "my tasks" — respond with TASK_LIST:[id1,id2,...]. Do NOT repeat task details in text.
+  Ticket-specific ("ticket","issue","support") → filter is_support_ticket true only
+  Task-specific ("task","work","assignment") → filter is_support_ticket false/null only
 
-4. **IF THE USER IS ASKING TO VIEW/LIST/FILTER** (keywords: "show", "list", "what are", "get", "open", "pending", "overdue", "tickets", "issues", etc.):
-   - **For general task requests**: Filter all tasks and return matching IDs with TASK_LIST:[id1,id2,id3]
-   - **For ticket-specific requests** (keywords: "ticket", "issue", "support", "problem"): Filter only support tickets (is_support_ticket: true)
-   - **For task-specific requests** (keywords: "task", "work", "assignment"): Filter only regular tasks (is_support_ticket: false or not set)
-   - MANDATORY: End response with TASK_LIST:[id1,id2,id3] using matching IDs
-   - Do NOT list task details in the text - let the cards display them
-   - Example: User: "Show me open tasks" → "Here are your open tasks:\n\nTASK_LIST:[abc,def,ghi]"
-   - Example: User: "List support tickets" → "Here are your open support tickets:\n\nTASK_LIST:[xyz,uvw]"
+RULE 3 — CUSTOMER CREATE: "new customer", "add lead", "new lead" → CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"..."}
 
-5. **If creating a CUSTOMER PROFILE** (keywords: "add customer", "new customer", "add lead", "new lead", "register customer"): respond with JSON on a new line:
-CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"..."}
+RULE 4 — CUSTOMER LIST: "show customers", "view pipeline", "list leads" → CUSTOMER_LIST:[id1,id2,...]
 
-6. **If listing/viewing customers** (keywords: "show customers", "list leads", "view pipeline"): end response with CUSTOMER_LIST:[id1,id2,...]
+RULE 5 — AMBIGUITY: Only ask for clarification if intent is genuinely impossible to determine after all rules. NEVER ask twice in a row.
 
-7. **AMBIGUITY RULE — use SPARINGLY**: Only ask for clarification if the message contains NO recognizable action keywords (not "task", "ticket", "issue", "show", "list", "create", "add", "customer", "report", "problem", "bug", "assign", "update", "fix", "follow", "overdue", "status") AND you genuinely cannot infer intent from the conversation history. If the user replies with a number (1, 2, 3) or a follow-up after you asked, treat it as a direct selection of the previous options. NEVER ask for clarification twice in a row or for messages that clearly imply an action.
-
-8. Format response in markdown. Be concise and professional.`;
+Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 

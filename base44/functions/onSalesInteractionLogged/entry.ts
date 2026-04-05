@@ -21,8 +21,10 @@ Deno.serve(async (req) => {
     // Fetch customer name for context
     let customerName = "Unknown Customer";
     if (customerId) {
-      const customers = await base44.asServiceRole.entities.CustomerProfile.filter({ id: customerId });
-      if (customers?.length > 0) customerName = customers[0].name;
+      try {
+        const customers = await base44.asServiceRole.entities.CustomerProfile.filter({ id: customerId });
+        if (customers?.length > 0) customerName = customers[0].name;
+      } catch { /* customer not found, use default */ }
     }
 
     // 1. Create a follow-up task assigned to the sales rep
@@ -41,14 +43,17 @@ Deno.serve(async (req) => {
       customer_id: customerId || "",
     });
 
-    // 2. Notify the sales rep
+    // 2. Notify the sales rep — resolve email for consistent targeting
     if (salesRep) {
+      const members = await base44.asServiceRole.entities.TeamMember.list();
+      const member = members.find(m => m.name === salesRep);
+      const repEmail = member?.email || salesRep;
       await base44.asServiceRole.entities.Notification.create({
         title: "Sales Follow-Up Required",
         message: `Your ${interactionType} with ${customerName} requires a follow-up. Check your tasks.`,
         type: "info",
         read: false,
-        target_user: salesRep,
+        target_user: repEmail,
       });
     }
 

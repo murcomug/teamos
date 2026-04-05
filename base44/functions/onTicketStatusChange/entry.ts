@@ -13,34 +13,24 @@ Deno.serve(async (req) => {
     if (old_data?.status === "pending") return Response.json({ skipped: "status unchanged" });
 
     const ticketTitle = data.title || "Untitled Ticket";
-    const assignee = data.assignee || null;
+    const assigneeName = data.assignee || null;
     const ticketId = event?.entity_id;
 
-    // 1. Create a follow-up task linked to the ticket
-    await base44.asServiceRole.entities.Task.create({
-      title: `Follow up: ${ticketTitle}`,
-      description: `Auto-generated follow-up task for support ticket "${ticketTitle}" (ID: ${ticketId}). Please review and action this ticket.`,
-      status: "pending",
-      priority: "high",
-      assignee: assignee || "",
-      department: data.department || "",
-      due_date: (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().split("T")[0];
-      })(),
-      is_support_ticket: false,
-      customer_id: data.customer_id || "",
-    });
+    // Resolve assignee email for consistent notification targeting
+    let assigneeEmail = null;
+    if (assigneeName) {
+      const members = await base44.asServiceRole.entities.TeamMember.list();
+      const member = members.find(m => m.name === assigneeName);
+      assigneeEmail = member?.email || null;
+    }
 
-    // 2. Create an in-app notification
-    if (assignee) {
+    if (assigneeEmail) {
       await base44.asServiceRole.entities.Notification.create({
         title: "Support Ticket Needs Attention",
         message: `Ticket "${ticketTitle}" is now pending and requires your follow-up.`,
         type: "warning",
         read: false,
-        target_user: assignee,
+        target_user: assigneeEmail,
       });
     }
 

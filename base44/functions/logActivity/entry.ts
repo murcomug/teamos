@@ -9,7 +9,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { action, description, entity_type, entity_id } = await req.json();
+    const body = await req.json();
+    // Support both direct payload and automation args wrapper
+    const { action, description, entity_type, entity_id } = body.args || body;
 
     const log = await base44.entities.ActivityLog.create({
       action,

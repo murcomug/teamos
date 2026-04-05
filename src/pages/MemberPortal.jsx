@@ -25,13 +25,13 @@ export default function MemberPortal() {
   useEffect(() => {
     if (!memberSession) return;
     const fetchUnread = async () => {
-      const notifs = await base44.entities.Notification.filter({ read: false, target_user: memberSession.id });
+      const notifs = await base44.entities.Notification.filter({ read: false, target_user: memberSession.email });
       setUnreadCount(notifs?.length || 0);
       setDismissed(false);
     };
     fetchUnread();
     notifUnsubRef.current = base44.entities.Notification.subscribe((event) => {
-      if (event.type === "create" && event.data?.target_user === memberSession.id && !event.data?.read) {
+      if (event.type === "create" && event.data?.target_user === memberSession.email && !event.data?.read) {
         setUnreadCount(prev => prev + 1);
         setDismissed(false);
       } else if (event.type === "update" && event.data?.read) {

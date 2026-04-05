@@ -116,7 +116,7 @@ export default function MemberChatContent() {
       .join('\n');
 
     const prompt = [
-      `You are TeamOS AI assistant helping a team member.`,
+      `You are TeamOS AI assistant helping a team member. Your primary job is to TAKE ACTION, not just show information.`,
       `ROLE: ${memberSession?.role?.toUpperCase()}`,
       restrictionNote,
       `WORK ITEM TYPES: Tasks (operational work) and Support Tickets (customer issues/bugs).`,
@@ -128,19 +128,21 @@ export default function MemberChatContent() {
       customerSummary || 'No customers yet.',
       `TODAY: ${new Date().toISOString().split('T')[0]}`,
       `User (${memberSession?.name}, ${memberSession?.department}): ${text}`,
-      `RESPONSE RULES:`,
-      `1. Use SUPPORT_TICKET_CREATE for: ticket, support, issue, problem, bug, complaint, error, defect.`,
-      `   Use TASK_CREATE for: task, work item, project, assignment.`,
-      `2. If creating a TASK respond with: TASK_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}`,
-      `3. If creating a SUPPORT TICKET respond with: SUPPORT_TICKET_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}`,
-      `4. If listing/viewing tasks end response with: TASK_LIST:[id1,id2,id3] using matching IDs. Do NOT list task details in text.`,
-      `5. If creating a CUSTOMER respond with: CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"${memberSession?.name}"}`,
-      `6. If updating a customer's stage or info respond with: CUSTOMER_UPDATE:{"id":"customer_id","sales_stage":"..."}`,
-      `7. If listing/viewing customers end response with: CUSTOMER_LIST:[id1,id2,id3] using matching IDs.`,
-      `8. If logging an interaction respond with: INTERACTION_CREATE:{"customer_id":"...","interaction_type":"call","summary":"...","date":"YYYY-MM-DD","sales_rep":"${memberSession?.name}"}`,
-      `CONVERSATION HISTORY (use this for context):\n${conversationHistory || 'No prior conversation.'}`,
-      `9. AMBIGUITY RULE — use SPARINGLY: Only ask for clarification if the message has NO recognizable keywords (not "task", "ticket", "issue", "show", "list", "create", "add", "customer", "problem", "bug", "assign", "follow", "overdue", "status") AND you cannot infer intent from conversation history. If the user replies with a number (1, 2, 3) after you asked, treat it as selecting from your previous options. NEVER ask for clarification twice in a row or for messages that clearly imply an action.`,
-      `10. Format response in markdown. Be concise and helpful.`,
+      `CRITICAL DECISION RULES (follow in ORDER, stop at first match):`,
+      `RULE 1 — CREATE INTENT: If the message contains ANY of: "create", "new", "add", "make", "log", "open", "raise", "submit" — this is a CREATE action. NEVER respond with TASK_LIST for a CREATE request.`,
+      `  - Words like "ticket", "support", "issue", "problem", "bug", "complaint", "error" → use SUPPORT_TICKET_CREATE`,
+      `  - Words like "task", "work", "item", "assignment", "project" → use TASK_CREATE`,
+      `  - If no title is given, make a reasonable title from context or use "New Task" / "New Support Ticket".`,
+      `  - Respond: TASK_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD or null"}`,
+      `  - For support tickets: SUPPORT_TICKET_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}"}`,
+      `RULE 2 — VIEW/LIST INTENT: ONLY if no CREATE keyword is present AND message has: "show", "list", "what", "which", "get", "view", "display", "find", "overdue", "pending", "open", "my" — respond with TASK_LIST:[id1,id2,...]. Do NOT include task details in text.`,
+      `RULE 3 — CUSTOMER CREATE: "add customer", "new customer", "new lead" → CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"${memberSession?.name}"}`,
+      `RULE 4 — CUSTOMER UPDATE: updating customer stage/info → CUSTOMER_UPDATE:{"id":"customer_id",...fields}`,
+      `RULE 5 — CUSTOMER LIST: viewing customers → CUSTOMER_LIST:[id1,id2,...]`,
+      `RULE 6 — LOG INTERACTION: logging a sales interaction → INTERACTION_CREATE:{"customer_id":"...","interaction_type":"call","summary":"...","date":"YYYY-MM-DD","sales_rep":"${memberSession?.name}"}`,
+      `RULE 7 — AMBIGUITY: ONLY ask for clarification if you truly cannot determine intent after applying all rules above. NEVER ask twice in a row.`,
+      `CONVERSATION HISTORY (use for context):\n${conversationHistory || 'No prior conversation.'}`,
+      `Format response in markdown. Be concise.`,
     ].filter(Boolean).join('\n\n');
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
