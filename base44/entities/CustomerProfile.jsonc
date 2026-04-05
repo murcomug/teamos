@@ -35,6 +35,9 @@
         "proposal",
         "negotiation",
         "closed-won",
+        "onboarding",
+        "integrating",
+        "testing",
         "closed-lost"
       ],
       "default": "lead"

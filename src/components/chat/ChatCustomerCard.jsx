@@ -4,6 +4,9 @@ const stageConfig = {
   proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
   negotiation: { bg: "bg-orange-500/15", text: "text-orange-400" },
   "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400" },
+  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400" },
+  testing: { bg: "bg-teal-500/15", text: "text-teal-400" },
   "closed-lost": { bg: "bg-red-500/15", text: "text-red-400" },
 };
 

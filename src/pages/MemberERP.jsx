@@ -77,8 +77,8 @@ export default function MemberERP() {
               <Select value={newForm.sales_stage} onValueChange={v => setNewForm({...newForm, sales_stage: v})}>
                 <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
-                  {["lead","qualified","proposal","negotiation","closed-won","closed-lost"].map(s => (
-                    <SelectItem key={s} value={s} className="text-foreground text-xs">{s}</SelectItem>
+                  {["lead","qualified","proposal","negotiation","closed-won","onboarding","integrating","testing","closed-lost"].map(s => (
+                    <SelectItem key={s} value={s} className="text-foreground text-xs capitalize">{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -104,7 +104,7 @@ export default function MemberERP() {
               <SelectTrigger className="bg-white/[0.04] border-white/[0.08] text-foreground h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
                 <SelectItem value="all" className="text-foreground text-xs">All Stages</SelectItem>
-                {["lead","qualified","proposal","negotiation","closed-won","closed-lost"].map(s => (
+                {["lead","qualified","proposal","negotiation","closed-won","onboarding","integrating","testing","closed-lost"].map(s => (
                   <SelectItem key={s} value={s} className="text-foreground text-xs capitalize">{s}</SelectItem>
                 ))}
               </SelectContent>

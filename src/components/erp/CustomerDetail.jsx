@@ -13,6 +13,9 @@ const stageConfig = {
   proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
   negotiation: { bg: "bg-orange-500/15", text: "text-orange-400" },
   "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400" },
+  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400" },
+  testing: { bg: "bg-teal-500/15", text: "text-teal-400" },
   "closed-lost": { bg: "bg-red-500/15", text: "text-red-400" },
 };
 
@@ -88,7 +91,7 @@ export default function CustomerDetail({ customer, salesRep, onUpdate }) {
                 <Select value={editForm.sales_stage} onValueChange={v => setEditForm({...editForm, sales_stage: v})}>
                   <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
-                    {["lead","qualified","proposal","negotiation","closed-won","closed-lost"].map(s => (
+                    {["lead","qualified","proposal","negotiation","closed-won","onboarding","integrating","testing","closed-lost"].map(s => (
                       <SelectItem key={s} value={s} className="text-foreground text-xs">{s}</SelectItem>
                     ))}
                   </SelectContent>
