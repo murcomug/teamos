@@ -103,11 +103,17 @@ export default function MemberChatContent() {
 
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
-
     const isAdmin = memberSession?.role === 'admin';
     const restrictionNote = !isAdmin
       ? `RESTRICTIONS - You CANNOT create, add, or invite team members or departments. If asked, politely decline and say only admins can do this.`
       : '';
+
+    // Build conversation history for context (last 10 messages)
+    const historyMessages = messages.slice(-10);
+    const conversationHistory = historyMessages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n');
 
     const prompt = [
       `You are TeamOS AI assistant helping a team member.`,
@@ -132,7 +138,8 @@ export default function MemberChatContent() {
       `6. If updating a customer's stage or info respond with: CUSTOMER_UPDATE:{"id":"customer_id","sales_stage":"..."}`,
       `7. If listing/viewing customers end response with: CUSTOMER_LIST:[id1,id2,id3] using matching IDs.`,
       `8. If logging an interaction respond with: INTERACTION_CREATE:{"customer_id":"...","interaction_type":"call","summary":"...","date":"YYYY-MM-DD","sales_rep":"${memberSession?.name}"}`,
-      `9. AMBIGUITY RULE — VERY IMPORTANT: If the user's request is unclear and could reasonably mean more than one action (e.g. create a task vs ticket, add a customer vs log an issue), do NOT guess. Ask a short clarifying question listing the possible actions as numbered options. For example: "I want to make sure I do the right thing. Did you mean to:\n1. Create a support ticket\n2. Create a task\n3. Add a customer profile\nReply with the number or clarify further." Only ask — do NOT output any action code in that response.`,
+      `CONVERSATION HISTORY (use this for context):\n${conversationHistory || 'No prior conversation.'}`,
+      `9. AMBIGUITY RULE — use SPARINGLY: Only ask for clarification if the message has NO recognizable keywords (not "task", "ticket", "issue", "show", "list", "create", "add", "customer", "problem", "bug", "assign", "follow", "overdue", "status") AND you cannot infer intent from conversation history. If the user replies with a number (1, 2, 3) after you asked, treat it as selecting from your previous options. NEVER ask for clarification twice in a row or for messages that clearly imply an action.`,
       `10. Format response in markdown. Be concise and helpful.`,
     ].filter(Boolean).join('\n\n');
 

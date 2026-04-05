@@ -108,6 +108,13 @@ export default function AgentChat() {
       ? ""
       : `\n⚠️ IMPORTANT: This user does NOT have company-wide report access. Only show data related to their own tasks or their department (${memberSession?.department}). Politely refuse requests for company-wide stats or other departments' data.`;
 
+    // Build conversation history for context (last 10 messages)
+    const historyMessages = messages.slice(-10);
+    const conversationHistory = historyMessages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n');
+
     const prompt = `You are TeamOS AI assistant that helps manage team operations and support requests. You handle two distinct types of work items.
 
 **WORK ITEM TYPES:**
@@ -133,6 +140,9 @@ TASK STATUS DEFINITIONS:
 - "open" or "active" tasks = status is pending OR ongoing
 - "completed" tasks = status is completed
 - "stopped" tasks = status is stopped
+
+CONVERSATION HISTORY (use this for context and to understand what the user has been working on):
+${conversationHistory || 'No prior conversation.'}
 
 User request: ${text}
 
@@ -162,7 +172,7 @@ CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales
 
 6. **If listing/viewing customers** (keywords: "show customers", "list leads", "view pipeline"): end response with CUSTOMER_LIST:[id1,id2,...]
 
-7. **AMBIGUITY RULE — VERY IMPORTANT**: If the user's request is unclear and could reasonably mean more than one action (e.g. create a task vs ticket, add a customer vs log an issue, report a problem vs create a work item), do NOT guess or pick one. Instead, ask a short clarifying question listing the possible actions as numbered options. For example: "I want to make sure I do the right thing. Did you mean to:\n1. Create a support ticket\n2. Create a task\n3. Add a customer profile\nReply with the number or clarify further." Only ask for clarification — do NOT output any action code in that response.
+7. **AMBIGUITY RULE — use SPARINGLY**: Only ask for clarification if the message contains NO recognizable action keywords (not "task", "ticket", "issue", "show", "list", "create", "add", "customer", "report", "problem", "bug", "assign", "update", "fix", "follow", "overdue", "status") AND you genuinely cannot infer intent from the conversation history. If the user replies with a number (1, 2, 3) or a follow-up after you asked, treat it as a direct selection of the previous options. NEVER ask for clarification twice in a row or for messages that clearly imply an action.
 
 8. Format response in markdown. Be concise and professional.`;
 
