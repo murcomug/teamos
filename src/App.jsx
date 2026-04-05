@@ -29,6 +29,7 @@ import MemberChatContent from './pages/MemberChat';
 import MemberTeamContent from './pages/MemberTeam';
 import MemberDepartmentsContent from './pages/MemberDepartments';
 import MemberReportsContent from './pages/MemberReports';
+import MemberERP from './pages/MemberERP';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -88,6 +89,7 @@ function App() {
                 <Route path="/member-team" element={<MemberTeamContent />} />
                 <Route path="/member-departments" element={<MemberDepartmentsContent />} />
                 <Route path="/member-reports" element={<MemberReportsContent />} />
+                <Route path="/member-erp" element={<MemberERP />} />
               </Route>
               <Route path="*" element={<AuthenticatedApp />} />
             </Routes>

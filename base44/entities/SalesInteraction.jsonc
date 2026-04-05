@@ -1,0 +1,43 @@
+{
+  "name": "SalesInteraction",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string",
+      "title": "Customer ID"
+    },
+    "interaction_type": {
+      "type": "string",
+      "title": "Type",
+      "enum": [
+        "call",
+        "email",
+        "meeting",
+        "demo",
+        "follow-up"
+      ],
+      "default": "call"
+    },
+    "summary": {
+      "type": "string",
+      "title": "Summary"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+    },
+    "sales_rep": {
+      "type": "string",
+      "title": "Sales Rep"
+    },
+    "outcome": {
+      "type": "string",
+      "title": "Outcome"
+    }
+  },
+  "required": [
+    "customer_id",
+    "summary"
+  ]
+}

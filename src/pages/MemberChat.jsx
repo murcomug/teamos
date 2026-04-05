@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Loader2 } from "lucide-react";
 import MentionInput from "../components/chat/MentionInput";
 import ChatTaskCard from "../components/chat/ChatTaskCard";
+import ChatCustomerCard from "../components/chat/ChatCustomerCard";
 import TaskEditModal from "../components/shared/TaskEditModal";
 import { useMemberSession } from "@/lib/MemberSessionContext";
 
@@ -40,6 +41,7 @@ export default function MemberChatContent() {
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const scrollRef = useRef(null);
@@ -57,10 +59,12 @@ export default function MemberChatContent() {
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
       base44.entities.Task.filter({ assignee: memberSession.name }),
-    ]).then(([m, d, t]) => {
+      base44.entities.CustomerProfile.list(),
+    ]).then(([m, d, t, c]) => {
       setMembers(m);
       setDepartments(d);
       setTasks(t || []);
+      setCustomers(c || []);
     });
   }, [memberSession]);
 
@@ -90,6 +94,9 @@ export default function MemberChatContent() {
     const mentionedName = mentionMatch ? mentionMatch[0].substring(1).trim() : null;
 
     const deptTasks = tasks.filter(t => t.department === memberSession?.department);
+    const customerSummary = customers.slice(0, 30).map(c =>
+      `ID:${c.id} "${c.name}" company:${c.company || 'N/A'} stage:${c.sales_stage || 'lead'} rep:${c.assigned_sales_rep || 'unassigned'} email:${c.email || 'N/A'}`
+    ).join("\n");
     const taskSummary = deptTasks.slice(0, 30).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
     ).join("\n");
@@ -111,6 +118,8 @@ export default function MemberChatContent() {
       taskSummary,
       `TEAM: ${memberSummary}`,
       `DEPARTMENTS: ${deptSummary}`,
+      `CUSTOMERS (CRM):`,
+      customerSummary || 'No customers yet.',
       `TODAY: ${new Date().toISOString().split('T')[0]}`,
       `User (${memberSession?.name}, ${memberSession?.department}): ${text}`,
       `RESPONSE RULES:`,
@@ -119,7 +128,11 @@ export default function MemberChatContent() {
       `2. If creating a TASK respond with: TASK_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}`,
       `3. If creating a SUPPORT TICKET respond with: SUPPORT_TICKET_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}`,
       `4. If listing/viewing tasks end response with: TASK_LIST:[id1,id2,id3] using matching IDs. Do NOT list task details in text.`,
-      `5. Format response in markdown. Be concise and helpful.`,
+      `5. If creating a CUSTOMER respond with: CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"${memberSession?.name}"}`,
+      `6. If updating a customer's stage or info respond with: CUSTOMER_UPDATE:{"id":"customer_id","sales_stage":"..."}`,
+      `7. If listing/viewing customers end response with: CUSTOMER_LIST:[id1,id2,id3] using matching IDs.`,
+      `8. If logging an interaction respond with: INTERACTION_CREATE:{"customer_id":"...","interaction_type":"call","summary":"...","date":"YYYY-MM-DD","sales_rep":"${memberSession?.name}"}`,
+      `9. Format response in markdown. Be concise and helpful.`,
     ].filter(Boolean).join('\n\n');
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
@@ -158,6 +171,67 @@ export default function MemberChatContent() {
       }
     }
 
+    // CUSTOMER_CREATE
+    let createdCustomer = null;
+    if (typeof content === "string" && content.includes("CUSTOMER_CREATE:")) {
+      const parts = content.split("CUSTOMER_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const data = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdCustomer = await base44.entities.CustomerProfile.create(data);
+        setCustomers(prev => [createdCustomer, ...prev]);
+        content += "\n\n✅ Customer profile created!";
+      } catch { content += "\n\n⚠️ Could not auto-create the customer."; }
+    }
+
+    // CUSTOMER_UPDATE
+    if (typeof content === "string" && content.includes("CUSTOMER_UPDATE:")) {
+      const parts = content.split("CUSTOMER_UPDATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const data = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        const { id, ...updates } = data;
+        if (id) {
+          await base44.entities.CustomerProfile.update(id, updates);
+          setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+          content += "\n\n✅ Customer updated!";
+        }
+      } catch { content += "\n\n⚠️ Could not update the customer."; }
+    }
+
+    // INTERACTION_CREATE
+    if (typeof content === "string" && content.includes("INTERACTION_CREATE:")) {
+      const parts = content.split("INTERACTION_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const data = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        await base44.entities.SalesInteraction.create(data);
+        content += "\n\n✅ Interaction logged!";
+      } catch { content += "\n\n⚠️ Could not log the interaction."; }
+    }
+
+    // CUSTOMER_LIST
+    let listedCustomers = [];
+    if (typeof content === "string" && content.includes("CUSTOMER_LIST:")) {
+      const parts = content.split("CUSTOMER_LIST:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const bracketMatch = raw.match(/\[(.+)\]/);
+        if (bracketMatch) {
+          const ids = bracketMatch[1].split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).filter(Boolean);
+          listedCustomers = ids.map(id => customers.find(c => c.id === id)).filter(Boolean);
+        }
+      } catch {}
+      if (listedCustomers.length === 0) content += "\n\n*No customers match that request.*";
+    }
+
     let listedTasks = [];
     if (typeof content === "string" && content.includes("TASK_LIST:")) {
       const parts = content.split("TASK_LIST:");
@@ -167,29 +241,16 @@ export default function MemberChatContent() {
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
         const bracketMatch = raw.match(/\[(.+)\]/);
         if (bracketMatch) {
-          let arrayContent = bracketMatch[1];
-          arrayContent = arrayContent.replace(/\]+$/, '');
-          const idStrings = arrayContent
-            .split(',')
-            .map(s => {
-              const trimmed = s.trim();
-              return trimmed.replace(/^["']|["']$/g, '');
-            })
-            .filter(s => s.length > 0);
-          listedTasks = idStrings
-            .map(id => tasks.find(t => t.id === id))
-            .filter(Boolean);
+          let arrayContent = bracketMatch[1].replace(/\]+$/, '');
+          const idStrings = arrayContent.split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).filter(s => s.length > 0);
+          listedTasks = idStrings.map(id => tasks.find(t => t.id === id)).filter(Boolean);
         }
-      } catch (e) {
-        console.error("Failed to parse TASK_LIST:", e);
-      }
-      
-      if (listedTasks.length === 0) {
-        content += "\n\n*No open tasks match that request.*";
-      }
+      } catch (e) {}
+      if (listedTasks.length === 0) content += "\n\n*No open tasks match that request.*";
     }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
+    const customerCards = createdCustomer ? [createdCustomer, ...listedCustomers] : listedCustomers;
 
     setMessages((prev) => [
       ...prev,
@@ -197,6 +258,7 @@ export default function MemberChatContent() {
         role: "assistant",
         content,
         tasks: taskCards.length > 0 ? taskCards : undefined,
+        customerCards: customerCards.length > 0 ? customerCards : undefined,
       },
     ]);
     setLoading(false);
@@ -244,6 +306,9 @@ export default function MemberChatContent() {
                       onStatusChange={handleStatusChange} onEdit={setEditTask} />
                   </div>
                 </div>
+              ))}
+              {msg.customerCards && msg.customerCards.map(c => c && (
+                <ChatCustomerCard key={c.id} customer={c} />
               ))}
 
             </div>

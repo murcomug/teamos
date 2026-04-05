@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useMemberSession } from "@/lib/MemberSessionContext";
-import { CheckSquare, Ticket, Clock, MessageSquare, Users, Building2, BarChart2, Menu, X, LogOut, CheckCircle, Bell } from "lucide-react";
+import { CheckSquare, Ticket, Clock, MessageSquare, Users, Building2, BarChart2, Menu, X, LogOut, CheckCircle, Bell, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import UserAvatar from "../components/shared/UserAvatar";
 import { useState } from "react";
@@ -33,6 +33,7 @@ export default function MemberPortal() {
     { label: "Team", href: "/member-team", icon: Users },
     { label: "Departments", href: "/member-departments", icon: Building2 },
     ...(hasPermission("view_reports") || hasPermission("company_wide_reports") || memberSession?.role === "admin" ? [{ label: "Reports", href: "/member-reports", icon: BarChart2 }] : []),
+    ...(memberSession?.department === "Sales" || memberSession?.role === "admin" ? [{ label: "Sales CRM", href: "/member-erp", icon: Briefcase }] : []),
   ];
 
   return (

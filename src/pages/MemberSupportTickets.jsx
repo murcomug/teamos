@@ -12,6 +12,7 @@ export default function MemberSupportTickets() {
   const [tickets, setTickets] = useState([]);
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editTask, setEditTask] = useState(null);
   const [activeTab, setActiveTab] = useState("open");
@@ -23,15 +24,17 @@ export default function MemberSupportTickets() {
 
     const loadData = async () => {
       try {
-        const [allTasks, m, d] = await Promise.all([
+        const [allTasks, m, d, c] = await Promise.all([
           base44.entities.Task.list(),
           base44.entities.TeamMember.list(),
           base44.entities.Department.list(),
+          base44.entities.CustomerProfile.list(),
         ]);
         const supportTickets = (allTasks || []).filter(t => t.is_support_ticket);
         setTickets(supportTickets);
         setMembers(m || []);
         setDepartments(d || []);
+        setCustomers(c || []);
       } catch (err) {
         console.error("Error loading support tickets:", err);
       } finally {
@@ -59,15 +62,24 @@ export default function MemberSupportTickets() {
   const openTickets = tickets.filter(t => t.status !== "completed");
   const closedTickets = tickets.filter(t => t.status === "completed");
 
+  const getCustomerName = (ticket) => {
+    if (ticket.customer_id) {
+      const c = customers.find(c => c.id === ticket.customer_id);
+      return c ? `${c.name}${c.company ? ` (${c.company})` : ''}` : ticket.customer_name || '';
+    }
+    return ticket.customer_name || '';
+  };
+
   const filteredTickets = (activeTab === "open" ? openTickets : closedTickets).filter(t => {
     const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.assignee?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCustomer = !customerFilter || t.customer_name?.toLowerCase().includes(customerFilter.toLowerCase());
+    const customerName = getCustomerName(t);
+    const matchesCustomer = !customerFilter || customerName.toLowerCase().includes(customerFilter.toLowerCase());
     return matchesSearch && matchesCustomer;
   });
 
-  const uniqueCustomers = [...new Set(tickets.map(t => t.customer_name).filter(Boolean))].sort();
+  const uniqueCustomers = [...new Set(tickets.map(t => getCustomerName(t)).filter(Boolean))].sort();
 
   const handleEditSave = async (form) => {
     if (editTask?.id) {
@@ -193,9 +205,9 @@ export default function MemberSupportTickets() {
                           {ticket.department}
                         </span>
                       )}
-                      {ticket.customer_name && (
+                      {(ticket.customer_id || ticket.customer_name) && (
                         <span className="text-[11px] text-primary font-mono px-2 py-0.5 rounded bg-primary/10">
-                          {ticket.customer_name}
+                          {getCustomerName(ticket)}
                         </span>
                       )}
                       {ticket.due_date && (
@@ -259,6 +271,7 @@ export default function MemberSupportTickets() {
         members={members}
         departments={departments}
         allTasks={tickets}
+        customers={customers}
       />
     </div>
   );
