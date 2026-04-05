@@ -52,7 +52,7 @@ TeamOS
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'TeamOS <onboarding@resend.dev>',
+        from: 'TeamOS <noreply@blockchainag.io>',
         to: [member.email],
         subject,
         text: body,
