@@ -259,10 +259,9 @@ Format response in markdown. Be concise and professional.`;
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
     const customerCards = createdCustomer ? [createdCustomer, ...listedCustomers] : listedCustomers;
 
-    // Final cleanup: strip any remaining JSON blocks or code fences from displayed content
+    // Final cleanup: strip code fences only (not all JSON — it breaks markdown content)
     content = content
       .replace(/```[\s\S]*?```/g, "")
-      .replace(/\{[\s\S]*\}/g, "")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
 
