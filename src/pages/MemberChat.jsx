@@ -272,10 +272,9 @@ export default function MemberChatContent() {
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
     const customerCards = createdCustomer ? [createdCustomer, ...listedCustomers] : listedCustomers;
 
-    // Final cleanup: strip leftover code fences and any stray JSON objects
+    // Final cleanup: strip leftover code fences only
     content = content
       .replace(/```[\s\S]*?```/g, "")
-      .replace(/\{[^{}]*\}/g, "")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
 
