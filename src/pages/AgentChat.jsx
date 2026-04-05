@@ -162,7 +162,9 @@ CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales
 
 6. **If listing/viewing customers** (keywords: "show customers", "list leads", "view pipeline"): end response with CUSTOMER_LIST:[id1,id2,...]
 
-7. Format response in markdown. Be concise and professional.`;
+7. **AMBIGUITY RULE — VERY IMPORTANT**: If the user's request is unclear and could reasonably mean more than one action (e.g. create a task vs ticket, add a customer vs log an issue, report a problem vs create a work item), do NOT guess or pick one. Instead, ask a short clarifying question listing the possible actions as numbered options. For example: "I want to make sure I do the right thing. Did you mean to:\n1. Create a support ticket\n2. Create a task\n3. Add a customer profile\nReply with the number or clarify further." Only ask for clarification — do NOT output any action code in that response.
+
+8. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 

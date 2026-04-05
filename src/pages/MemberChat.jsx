@@ -132,7 +132,8 @@ export default function MemberChatContent() {
       `6. If updating a customer's stage or info respond with: CUSTOMER_UPDATE:{"id":"customer_id","sales_stage":"..."}`,
       `7. If listing/viewing customers end response with: CUSTOMER_LIST:[id1,id2,id3] using matching IDs.`,
       `8. If logging an interaction respond with: INTERACTION_CREATE:{"customer_id":"...","interaction_type":"call","summary":"...","date":"YYYY-MM-DD","sales_rep":"${memberSession?.name}"}`,
-      `9. Format response in markdown. Be concise and helpful.`,
+      `9. AMBIGUITY RULE — VERY IMPORTANT: If the user's request is unclear and could reasonably mean more than one action (e.g. create a task vs ticket, add a customer vs log an issue), do NOT guess. Ask a short clarifying question listing the possible actions as numbered options. For example: "I want to make sure I do the right thing. Did you mean to:\n1. Create a support ticket\n2. Create a task\n3. Add a customer profile\nReply with the number or clarify further." Only ask — do NOT output any action code in that response.`,
+      `10. Format response in markdown. Be concise and helpful.`,
     ].filter(Boolean).join('\n\n');
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
