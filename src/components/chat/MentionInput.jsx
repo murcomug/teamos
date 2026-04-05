@@ -19,12 +19,10 @@ export default function MentionInput({ onSend, members = [], departments = [] })
     const lastAt = val.lastIndexOf("@");
     if (lastAt >= 0 && (lastAt === 0 || val[lastAt - 1] === " ")) {
       const query = val.slice(lastAt + 1);
-      if (!query.includes(" ")) {
-        setMentionQuery(query);
-        setMentionStart(lastAt);
-        setShowMentions(true);
-        return;
-      }
+      setMentionQuery(query);
+      setMentionStart(lastAt);
+      setShowMentions(true);
+      return;
     }
     setShowMentions(false);
   };
