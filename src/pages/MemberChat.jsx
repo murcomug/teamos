@@ -97,46 +97,30 @@ export default function MemberChatContent() {
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
 
-    const prompt = `You are TeamOS AI assistant helping a team member. This member can see all tasks in their department (${memberSession?.department}) and create tasks/support tickets.
+    const isAdmin = memberSession?.role === 'admin';
+    const restrictionNote = !isAdmin
+      ? `RESTRICTIONS - You CANNOT create, add, or invite team members or departments. If asked, politely decline and say only admins can do this.`
+      : '';
 
-**WORK ITEM TYPES:**
-- **Tasks**: Operational work assigned to this member
-- **Support Tickets**: Customer issues, bug reports, or support requests
-
-**Member's Data:**
-
-TASKS (all open tasks in ${memberSession?.department} department):
-${taskSummary}
-
-TEAM: ${memberSummary}
-DEPARTMENTS: ${deptSummary}
-
-TODAY: ${new Date().toISOString().split("T")[0]}
-
-User (${memberSession?.name}, ${memberSession?.department}): ${text}
-
-RESPONSE RULES:
-1. **CATEGORIZATION - Determine if the user wants a TASK or SUPPORT TICKET:**
-   - Use SUPPORT_TICKET_CREATE for: "ticket", "support", "issue", "problem", "bug", "complaint", "error", "defect"
-   - Use TASK_CREATE for: "task", "work item", "project", "assignment", or operational work
-   - When in doubt, prioritize based on keywords and context
-
-2. **If creating a TASK**: respond with JSON on a new line:
-TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}
-
-3. **If creating a SUPPORT TICKET**: respond with JSON on a new line:
-SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}
-
-4. **IF THE USER IS ASKING TO VIEW/LIST/FILTER** (keywords: "show", "list", "what are", "get", "open", "pending", "overdue", "tickets", "issues", etc.):
-   - **For general task requests**: Filter tasks in their department and return matching IDs with TASK_LIST:[id1,id2,id3]
-   - **For ticket-specific requests** (keywords: "ticket", "issue", "support", "problem"): Filter only support tickets (is_support_ticket: true) in their department
-   - **For task-specific requests** (keywords: "task", "work", "assignment"): Filter only regular tasks (is_support_ticket: false or not set) in their department
-   - MANDATORY: End response with TASK_LIST:[id1,id2,id3] using matching IDs from their department
-   - Do NOT list task details in the text - let the cards display them
-   - Example: User: "Show me open tasks in my department" → "Here are all open tasks in ${memberSession?.department}:\n\nTASK_LIST:[abc,def,ghi]"
-   - Example: User: "List department support tickets" → "Here are your department's open support tickets:\n\nTASK_LIST:[xyz,uvw]"
-
-5. Format response in markdown. Be concise and helpful.`;
+    const prompt = [
+      `You are TeamOS AI assistant helping a team member.`,
+      `ROLE: ${memberSession?.role?.toUpperCase()}`,
+      restrictionNote,
+      `WORK ITEM TYPES: Tasks (operational work) and Support Tickets (customer issues/bugs).`,
+      `TASKS (all open tasks in ${memberSession?.department} department):`,
+      taskSummary,
+      `TEAM: ${memberSummary}`,
+      `DEPARTMENTS: ${deptSummary}`,
+      `TODAY: ${new Date().toISOString().split('T')[0]}`,
+      `User (${memberSession?.name}, ${memberSession?.department}): ${text}`,
+      `RESPONSE RULES:`,
+      `1. Use SUPPORT_TICKET_CREATE for: ticket, support, issue, problem, bug, complaint, error, defect.`,
+      `   Use TASK_CREATE for: task, work item, project, assignment.`,
+      `2. If creating a TASK respond with: TASK_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}`,
+      `3. If creating a SUPPORT TICKET respond with: SUPPORT_TICKET_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD"}`,
+      `4. If listing/viewing tasks end response with: TASK_LIST:[id1,id2,id3] using matching IDs. Do NOT list task details in text.`,
+      `5. Format response in markdown. Be concise and helpful.`,
+    ].filter(Boolean).join('\n\n');
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
