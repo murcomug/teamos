@@ -30,6 +30,7 @@ import MemberTeamContent from './pages/MemberTeam';
 import MemberDepartmentsContent from './pages/MemberDepartments';
 import MemberReportsContent from './pages/MemberReports';
 import MemberERP from './pages/MemberERP';
+import SalesERP from './pages/SalesERP';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
         <Route path="/completed-items" element={<CompletedItems />} />
         <Route path="/activity-log" element={<ActivityLog />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/sales-erp" element={<SalesERP />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

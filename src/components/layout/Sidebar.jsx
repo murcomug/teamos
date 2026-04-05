@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, MessageSquare, CheckSquare, Users, Building2, 
-  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, Menu, X, Headset, CheckCircle2, History
+  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, Menu, X, Headset, CheckCircle2, History, Briefcase
 } from "lucide-react";
 import { useState } from "react";
 
@@ -14,6 +14,7 @@ const navItems = [
   { path: "/team", icon: Users, label: "Team" },
   { path: "/departments", icon: Building2, label: "Departments" },
   { path: "/reports", icon: BarChart3, label: "Reports" },
+  { path: "/sales-erp", icon: Briefcase, label: "Sales CRM" },
   { path: "/activity-log", icon: History, label: "Activity Log" },
   { path: "/notifications", icon: Bell, label: "Notifications" },
   { path: "/settings", icon: Settings, label: "Settings" },
