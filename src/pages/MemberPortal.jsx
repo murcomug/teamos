@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Outlet, useNavigate, Link } from "react-router-dom";
 import { useMemberSession } from "@/lib/MemberSessionContext";
+import { base44 } from "@/api/base44Client";
 import { CheckSquare, Ticket, MessageSquare, Users, Building2, BarChart2, Menu, X, LogOut, CheckCircle, Bell, Briefcase, ChevronDown } from "lucide-react";
 import UserAvatar from "../components/shared/UserAvatar";
 
@@ -9,6 +10,9 @@ export default function MemberPortal() {
   const { memberSession, logout, loading: sessionLoading } = useMemberSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(["Company"]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+  const notifUnsubRef = useRef(null);
 
   const toggleGroup = (label) => setExpandedGroups(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
 
@@ -17,6 +21,25 @@ export default function MemberPortal() {
       navigate("/member-login");
     }
   }, [memberSession, sessionLoading, navigate]);
+
+  useEffect(() => {
+    if (!memberSession) return;
+    const fetchUnread = async () => {
+      const notifs = await base44.entities.Notification.filter({ read: false, target_user: memberSession.id });
+      setUnreadCount(notifs?.length || 0);
+      setDismissed(false);
+    };
+    fetchUnread();
+    notifUnsubRef.current = base44.entities.Notification.subscribe((event) => {
+      if (event.type === "create" && event.data?.target_user === memberSession.id && !event.data?.read) {
+        setUnreadCount(prev => prev + 1);
+        setDismissed(false);
+      } else if (event.type === "update" && event.data?.read) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    });
+    return () => { if (notifUnsubRef.current) notifUnsubRef.current(); };
+  }, [memberSession]);
 
   if (!memberSession) {
     return null;
@@ -30,7 +53,7 @@ export default function MemberPortal() {
     { label: "Tasks", href: "/member-tasks", icon: CheckSquare },
     { label: "Support Tickets", href: "/member-support-tickets", icon: Ticket },
     { label: "Completed", href: "/member-completed", icon: CheckCircle },
-    { label: "Notifications", href: "/member-notifications", icon: Bell },
+
     {
       label: "Company", icon: Building2,
       children: [
@@ -108,6 +131,14 @@ export default function MemberPortal() {
           </div>
           
           <div className="flex items-center gap-3">
+            <a href="/member-notifications" className="relative p-1.5 hover:bg-white/[0.05] rounded-lg transition-all" onClick={() => setDismissed(true)}>
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              {unreadCount > 0 && !dismissed && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </a>
             <UserAvatar name={memberSession.name} color={memberSession.avatar_color} size="sm" />
             <button onClick={logout}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-white/[0.06] transition-all">
