@@ -136,7 +136,7 @@ export default function MemberChatContent() {
       `  - If no title is given, make a reasonable title from context or use "New Task" / "New Support Ticket".`,
       `  - Respond: TASK_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}","due_date":"YYYY-MM-DD or null"}`,
       `  - For support tickets: SUPPORT_TICKET_CREATE:{"title":"...","status":"pending","priority":"medium","assignee":"${memberSession?.name}","department":"${memberSession?.department}"}`,
-      `RULE 2 — VIEW/LIST INTENT: ONLY if no CREATE keyword is present AND message has: "show", "list", "what", "which", "get", "view", "display", "find", "overdue", "pending", "open", "my" — respond with TASK_LIST:[id1,id2,...]. Do NOT include task details in text.`,
+      `RULE 2 — VIEW/LIST INTENT: ONLY if no CREATE keyword is present AND message has: "show", "list", "what", "which", "get", "view", "display", "find", "overdue", "pending", "open", "my" — respond with TASK_LIST:[id1,id2,...]. CRITICAL: When using TASK_LIST, your ENTIRE text response before the command must be ONE short sentence only (e.g. "Here are your open tasks:"). Do NOT list task titles, IDs, or details in the text — the cards will display them automatically.`,
       `RULE 3 — CUSTOMER CREATE: "add customer", "new customer", "new lead" → CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"${memberSession?.name}"}`,
       `RULE 4 — CUSTOMER UPDATE: updating customer stage/info → CUSTOMER_UPDATE:{"id":"customer_id",...fields}`,
       `RULE 5 — CUSTOMER LIST: viewing customers → CUSTOMER_LIST:[id1,id2,...]`,

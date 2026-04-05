@@ -150,7 +150,7 @@ RULE 1 — CREATE INTENT (highest priority): If message contains ANY of: "create
   "ticket", "support", "issue", "problem", "bug", "complaint", "error", "defect" → SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":null}
   Everything else → TASK_CREATE:{"title":"...","description":"...","status":"pending","priority":"medium","assignee":"...","department":"...","due_date":null}
 
-RULE 2 — VIEW/LIST INTENT: ONLY if NO create keyword present AND message has "show", "list", "what", "get", "view", "find", "overdue", "pending", "open", "my tasks" — respond with TASK_LIST:[id1,id2,...]. Do NOT repeat task details in text.
+RULE 2 — VIEW/LIST INTENT: ONLY if NO create keyword present AND message has "show", "list", "what", "get", "view", "find", "overdue", "pending", "open", "my tasks" — respond with TASK_LIST:[id1,id2,...]. CRITICAL: When using TASK_LIST, your ENTIRE text response before the command must be ONE short sentence only (e.g. "Here are your open tasks:"). Do NOT list task titles, IDs, or details in the text — the cards will display them automatically.
   Ticket-specific ("ticket","issue","support") → filter is_support_ticket true only
   Task-specific ("task","work","assignment") → filter is_support_ticket false/null only
 
