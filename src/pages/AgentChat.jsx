@@ -201,7 +201,7 @@ For list intent: choose ALL matching task IDs from the TASKS list above. For cre
       }
     }
 
-    if (response.log_interaction) {
+    if (response.log_interaction?.summary && response.log_interaction?.customer_id) {
       await base44.entities.SalesInteraction.create(response.log_interaction);
       displayText += "\n\n✅ Interaction logged!";
     }
