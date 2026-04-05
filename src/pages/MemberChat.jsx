@@ -186,7 +186,7 @@ For list intent: choose ALL matching task IDs from the TASKS list. For create in
       displayText += "\n\n✅ Support ticket created successfully!";
     }
 
-    if (response.create_customer) {
+    if (response.create_customer?.name) {
       createdCustomer = await base44.entities.CustomerProfile.create(response.create_customer);
       setCustomers(prev => [createdCustomer, ...prev]);
       displayText += "\n\n✅ Customer profile created!";
