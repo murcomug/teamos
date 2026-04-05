@@ -2,10 +2,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 const PERMISSIONS = [
-  { key: "view_departments", label: "View Departments" },
-  { key: "add_departments", label: "Add Departments" },
-  { key: "view_team", label: "View Team Members" },
-  { key: "add_team", label: "Add Team Members" },
   { key: "view_reports", label: "View Reports" },
   { key: "company_wide_reports", label: "Request Company-Wide Reports (Agent)" },
 ];

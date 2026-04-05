@@ -30,9 +30,9 @@ export default function MemberPortal() {
     { label: "Support Tickets", href: "/member-support-tickets", icon: Ticket },
     { label: "Completed", href: "/member-completed", icon: CheckCircle },
     { label: "Notifications", href: "/member-notifications", icon: Bell },
-    ...(hasPermission("view_team") || hasPermission("add_team") ? [{ label: "Team", href: "/member-team", icon: Users }] : []),
-    ...(hasPermission("view_departments") || hasPermission("add_departments") ? [{ label: "Departments", href: "/member-departments", icon: Building2 }] : []),
-    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") ? [{ label: "Reports", href: "/member-reports", icon: BarChart2 }] : []),
+    { label: "Team", href: "/member-team", icon: Users },
+    { label: "Departments", href: "/member-departments", icon: Building2 },
+    ...(hasPermission("view_reports") || hasPermission("company_wide_reports") || memberSession?.role === "admin" ? [{ label: "Reports", href: "/member-reports", icon: BarChart2 }] : []),
   ];
 
   return (

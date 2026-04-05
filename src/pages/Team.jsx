@@ -43,7 +43,7 @@ export default function Team() {
 
   const getDefaultPermissions = (role) => {
     if (role === "admin") {
-      return ["company_wide_reports", "manage_team", "manage_departments"];
+      return ["view_reports", "company_wide_reports"];
     }
     return [];
   };
@@ -292,7 +292,7 @@ export default function Team() {
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground mt-2">
-                {form.role === "admin" ? "✓ Can view all data, add members, add departments" : "✓ Limited to own department, cannot manage members or departments"}
+                {form.role === "admin" ? "✓ Full access: can add members, add departments, and view all reports" : "✓ Can view team, departments, tasks, and support tickets. Cannot add members or departments."}
               </p>
             </div>
             <div>
