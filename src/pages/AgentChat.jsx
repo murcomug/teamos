@@ -89,6 +89,11 @@ export default function AgentChat() {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
+    // Extract @ mentions
+    const mentionMatches = text.match(/@([\w\s]+?)(?=\s@|\s{2}|$|[,.])/g) || text.match(/@([^@]+)/g) || [];
+    const mentionedName = mentionMatches.length > 0 ? mentionMatches[0].substring(1).trim() : null;
+    const mentionNote = mentionedName ? `\n\nIMPORTANT: The user mentioned "@${mentionedName}" — use this exact name as the assignee in any task/ticket you create.` : "";
+
     // Scope visible tasks based on permissions
     const visibleTasks = canCompanyWideReports
       ? tasks
@@ -132,7 +137,7 @@ CUSTOMERS:
 ${customerSummary || 'No customers yet.'}
 
 TODAY: ${new Date().toISOString().split("T")[0]}
-${scopeNote}
+${scopeNote}${mentionNote}
 
 CONVERSATION HISTORY:
 ${conversationHistory || 'No prior conversation.'}
@@ -172,7 +177,8 @@ Format response in markdown. Be concise and professional.`;
         // Extract only the first JSON object
         const jsonMatch = raw.match(/\{[\s\S]*?\}/);
         const taskData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-        createdTask = await base44.entities.Task.create(taskData);
+        const finalTaskData = { ...taskData, ...(mentionedName ? { assignee: mentionedName } : {}) };
+        createdTask = await base44.entities.Task.create(finalTaskData);
         setTasks((prev) => [createdTask, ...prev]);
         content += "\n\n✅ Task created successfully!";
       } catch (e) {
@@ -186,7 +192,8 @@ Format response in markdown. Be concise and professional.`;
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
         const jsonMatch = raw.match(/\{[\s\S]*?\}/);
         const ticketData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-        createdTask = await base44.entities.Task.create({ ...ticketData, is_support_ticket: true });
+        const finalTicketData = { ...ticketData, is_support_ticket: true, ...(mentionedName ? { assignee: mentionedName } : {}) };
+        createdTask = await base44.entities.Task.create(finalTicketData);
         setTasks((prev) => [createdTask, ...prev]);
         content += "\n\n✅ Support ticket created successfully!";
       } catch (e) {

@@ -90,8 +90,9 @@ export default function MemberChatContent() {
     setLoading(true);
 
     // Extract @ mentions from message
-    const mentionMatch = text.match(/@([\w\s]+)/g);
-    const mentionedName = mentionMatch ? mentionMatch[0].substring(1).trim() : null;
+    const mentionMatches = text.match(/@([^@,\.]+)/g) || [];
+    const mentionedName = mentionMatches.length > 0 ? mentionMatches[0].substring(1).trim() : null;
+    const mentionNote = mentionedName ? `\n\nIMPORTANT: The user mentioned "@${mentionedName}" — use this exact name as the assignee in any task/ticket you create.` : "";
 
     const deptTasks = tasks.filter(t => t.department === memberSession?.department);
     const customerSummary = customers.slice(0, 30).map(c =>
@@ -141,6 +142,7 @@ export default function MemberChatContent() {
       `RULE 5 — CUSTOMER LIST: viewing customers → CUSTOMER_LIST:[id1,id2,...]`,
       `RULE 6 — LOG INTERACTION: logging a sales interaction → INTERACTION_CREATE:{"customer_id":"...","interaction_type":"call","summary":"...","date":"YYYY-MM-DD","sales_rep":"${memberSession?.name}"}`,
       `RULE 7 — AMBIGUITY: ONLY ask for clarification if you truly cannot determine intent after applying all rules above. NEVER ask twice in a row.`,
+      mentionNote || "",
       `CONVERSATION HISTORY (use for context):\n${conversationHistory || 'No prior conversation.'}`,
       `Format response in markdown. Be concise.`,
     ].filter(Boolean).join('\n\n');
@@ -158,7 +160,8 @@ export default function MemberChatContent() {
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
         const jsonMatch = raw.match(/\{[\s\S]*?\}/);
         const taskData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-        createdTask = await base44.entities.Task.create(taskData);
+        const finalTaskData = { ...taskData, ...(mentionedName ? { assignee: mentionedName } : {}) };
+        createdTask = await base44.entities.Task.create(finalTaskData);
         setTasks((prev) => [createdTask, ...prev]);
         content += "\n\n✅ Task created successfully!";
       } catch (e) {
