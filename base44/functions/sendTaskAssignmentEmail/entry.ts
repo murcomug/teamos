@@ -45,11 +45,23 @@ Best regards,
 TeamOS
     `.trim();
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: member.email,
-      subject,
-      body,
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'TeamOS <onboarding@resend.dev>',
+        to: [member.email],
+        subject,
+        text: body,
+      }),
     });
+    if (!resendRes.ok) {
+      const err = await resendRes.text();
+      throw new Error(`Resend error: ${err}`);
+    }
 
     return Response.json({ sent: true, to: member.email });
   } catch (error) {

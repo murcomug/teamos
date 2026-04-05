@@ -5,7 +5,8 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();
 
-    const { entity_id, data } = payload;
+    const entity_id = payload.event?.entity_id || payload.entity_id;
+    const data = payload.data || payload;
 
     // Only act when stage becomes closed-won
     if (data?.sales_stage !== "closed-won") {
