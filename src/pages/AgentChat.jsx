@@ -271,6 +271,13 @@ Format response in markdown. Be concise and professional.`;
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
     const customerCards = createdCustomer ? [createdCustomer, ...listedCustomers] : listedCustomers;
 
+    // Final cleanup: strip any remaining JSON blocks or code fences from displayed content
+    content = content
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/\{[\s\S]*\}/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
     setMessages((prev) => [
       ...prev,
       {
