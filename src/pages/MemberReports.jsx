@@ -66,16 +66,15 @@ export default function MemberReportsContent() {
             </button>
           ))}
         </div>
-        <div className="flex rounded-lg overflow-hidden border border-white/[0.08]">
-          {["week", "month", "quarter"].map(p => (
-            <button key={p} onClick={() => setPeriod(p)}
-              className={`px-4 py-2 text-sm font-medium capitalize transition-all ${
-                period === p ? "bg-primary text-primary-foreground" : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
-              }`}>
-              {p === "week" ? "This Week" : p === "month" ? "This Month" : "This Quarter"}
-            </button>
-          ))}
-        </div>
+        <select
+          value={period}
+          onChange={e => setPeriod(e.target.value)}
+          className="px-4 py-2 text-sm font-medium rounded-lg border border-white/[0.08] bg-white/[0.04] text-foreground focus:outline-none focus:border-primary/40 cursor-pointer"
+        >
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+        </select>
       </div>
 
       {loading ? (
