@@ -7,10 +7,18 @@ export default function TopBar() {
   const [user, setUser] = useState(null);
   const [searchValue, setSearchValue] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then((u) => {
+      setUser(u);
+      if (u?.email) {
+        base44.entities.Notification.filter({ read: false, target_user: u.email })
+          .then((n) => setUnreadCount(n?.length || 0))
+          .catch(() => {});
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -51,7 +59,7 @@ export default function TopBar() {
       <div className="flex items-center gap-4 ml-4">
         <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-white/[0.04] transition-colors">
           <Bell className="h-[18px] w-[18px] text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+          {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />}
         </Link>
         
         <div className="relative" ref={dropdownRef}>
