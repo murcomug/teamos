@@ -260,6 +260,13 @@ export default function MemberChatContent() {
         }
       } catch (e) {}
       if (listedTasks.length === 0) content += "\n\n*No open tasks match that request.*";
+    } else if (typeof content === "string" && /ID:\s*[a-f0-9]{24}/i.test(content)) {
+      // Fallback: LLM output plain text with IDs — auto-extract them into cards
+      const idMatches = [...content.matchAll(/ID:\s*([a-f0-9]{24})/gi)];
+      const ids = idMatches.map(m => m[1]);
+      listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+      // Strip the ID list from the text
+      content = content.replace(/\n?ID:.*\n?/gi, "").replace(/\n{3,}/g, "\n\n").trim();
     }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;

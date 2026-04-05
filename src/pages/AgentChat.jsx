@@ -238,34 +238,22 @@ Format response in markdown. Be concise and professional.`;
       content = parts[0].trim();
       try {
         let raw = parts[1].trim();
-        // Strip markdown code fences
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
-        // Extract the array - greedy match to get everything between [ and ]
         const bracketMatch = raw.match(/\[(.+)\]/);
         if (bracketMatch) {
-          // Split by comma, extract quoted strings and unquoted IDs
-          let arrayContent = bracketMatch[1];
-          // Remove trailing brackets if nested
-          arrayContent = arrayContent.replace(/\]+$/, '');
-          const idStrings = arrayContent
-            .split(',')
-            .map(s => {
-              // Remove quotes if present
-              const trimmed = s.trim();
-              return trimmed.replace(/^["']|["']$/g, '');
-            })
-            .filter(s => s.length > 0);
-          listedTasks = idStrings
-            .map(id => tasks.find(t => t.id === id))
-            .filter(Boolean);
+          let arrayContent = bracketMatch[1].replace(/\]+$/, '');
+          const idStrings = arrayContent.split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).filter(s => s.length > 0);
+          listedTasks = idStrings.map(id => tasks.find(t => t.id === id)).filter(Boolean);
         }
-      } catch (e) {
-        console.error("Failed to parse TASK_LIST:", e);
-      }
-      
-      if (listedTasks.length === 0) {
-        content += "\n\n*No open tasks match that request.*";
-      }
+      } catch (e) {}
+      if (listedTasks.length === 0) content += "\n\n*No open tasks match that request.*";
+    } else if (typeof content === "string" && /ID:\s*[a-f0-9]{24}/i.test(content)) {
+      // Fallback: LLM output plain text with IDs — auto-extract them into cards
+      const idMatches = [...content.matchAll(/ID:\s*([a-f0-9]{24})/gi)];
+      const ids = idMatches.map(m => m[1]);
+      listedTasks = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+      // Strip the ID list from the text
+      content = content.replace(/\n?ID:.*\n?/gi, "").replace(/\n{3,}/g, "\n\n").trim();
     }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
