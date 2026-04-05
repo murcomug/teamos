@@ -20,7 +20,7 @@ const navItems = [
   },
   { path: "/reports", icon: BarChart3, label: "Reports" },
   { path: "/sales-erp", icon: Briefcase, label: "Sales CRM" },
-  { path: "/notifications", icon: Bell, label: "Notifications" },
+
   { path: "/agent-management", icon: Bot, label: "Agents" },
   { path: "/settings", icon: Settings, label: "Settings" },
   { path: "/activity-log", icon: History, label: "Activity Log" },
