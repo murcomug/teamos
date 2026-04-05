@@ -169,7 +169,7 @@ Format response in markdown. Be concise and professional.`;
 
     if (typeof content === "string" && content.includes("TASK_CREATE:")) {
       const parts = content.split("TASK_CREATE:");
-      content = parts[0].trim();
+      content = parts[0].replace(/```[\s\S]*?```/g, "").replace(/\{[\s\S]*?\}/g, "").trim();
       try {
         // Strip markdown code fences if LLM wrapped JSON in ```json ... ```
         let raw = parts[1].trim();
@@ -186,7 +186,7 @@ Format response in markdown. Be concise and professional.`;
       }
     } else if (typeof content === "string" && content.includes("SUPPORT_TICKET_CREATE:")) {
       const parts = content.split("SUPPORT_TICKET_CREATE:");
-      content = parts[0].trim();
+      content = parts[0].replace(/```[\s\S]*?```/g, "").replace(/\{[\s\S]*?\}/g, "").trim();
       try {
         let raw = parts[1].trim();
         raw = raw.replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
