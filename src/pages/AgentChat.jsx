@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Loader2 } from "lucide-react";
 import MentionInput from "../components/chat/MentionInput";
 import ChatTaskCard from "../components/chat/ChatTaskCard";
+import ChatCustomerCard from "../components/chat/ChatCustomerCard";
 import TaskEditModal from "../components/shared/TaskEditModal";
 
 const quickPrompts = [
@@ -41,6 +42,7 @@ export default function AgentChat() {
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const scrollRef = useRef(null);
@@ -57,10 +59,12 @@ export default function AgentChat() {
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
       base44.entities.Task.list(),
-    ]).then(([m, d, t]) => {
+      base44.entities.CustomerProfile.list(),
+    ]).then(([m, d, t, c]) => {
       setMembers(m);
       setDepartments(d);
       setTasks(t);
+      setCustomers(c || []);
     });
   }, []);
 
@@ -96,6 +100,9 @@ export default function AgentChat() {
 
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
+    const customerSummary = customers.slice(0, 20).map(c =>
+      `ID:${c.id} name:"${c.name}" company:"${c.company || ''}" email:"${c.email || ''}" stage:${c.sales_stage || 'lead'} rep:"${c.assigned_sales_rep || ''}"`
+    ).join("\n");
 
     const scopeNote = canCompanyWideReports
       ? ""
@@ -115,6 +122,9 @@ ${taskSummary}
 
 TEAM: ${memberSummary}
 DEPARTMENTS: ${deptSummary}
+
+CUSTOMERS (CRM):
+${customerSummary || 'No customers yet.'}
 
 TODAY: ${new Date().toISOString().split("T")[0]}
 ${scopeNote}
@@ -147,7 +157,12 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
    - Example: User: "Show me open tasks" → "Here are your open tasks:\n\nTASK_LIST:[abc,def,ghi]"
    - Example: User: "List support tickets" → "Here are your open support tickets:\n\nTASK_LIST:[xyz,uvw]"
 
-5. Format response in markdown. Be concise and professional.`;
+5. **If creating a CUSTOMER PROFILE** (keywords: "add customer", "new customer", "add lead", "new lead", "register customer"): respond with JSON on a new line:
+CUSTOMER_CREATE:{"name":"...","company":"...","email":"...","phone":"...","sales_stage":"lead","assigned_sales_rep":"..."}
+
+6. **If listing/viewing customers** (keywords: "show customers", "list leads", "view pipeline"): end response with CUSTOMER_LIST:[id1,id2,...]
+
+7. Format response in markdown. Be concise and professional.`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
 
@@ -184,6 +199,37 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
       } catch (e) {
         content += "\n\n⚠️ Could not auto-create the support ticket. Please create it manually.";
       }
+    }
+
+    // CUSTOMER_CREATE
+    let createdCustomer = null;
+    if (typeof content === "string" && content.includes("CUSTOMER_CREATE:")) {
+      const parts = content.split("CUSTOMER_CREATE:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+        const data = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        createdCustomer = await base44.entities.CustomerProfile.create(data);
+        setCustomers(prev => [createdCustomer, ...prev]);
+        content += "\n\n✅ Customer profile created!";
+      } catch { content += "\n\n⚠️ Could not create the customer profile."; }
+    }
+
+    // CUSTOMER_LIST
+    let listedCustomers = [];
+    if (typeof content === "string" && content.includes("CUSTOMER_LIST:")) {
+      const parts = content.split("CUSTOMER_LIST:");
+      content = parts[0].trim();
+      try {
+        let raw = parts[1].trim().replace(/^```[a-z]*\n?/i, "").replace(/```[\s\S]*$/, "").trim();
+        const bracketMatch = raw.match(/\[(.+)\]/);
+        if (bracketMatch) {
+          const ids = bracketMatch[1].split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).filter(Boolean);
+          listedCustomers = ids.map(id => customers.find(c => c.id === id)).filter(Boolean);
+        }
+      } catch {}
+      if (listedCustomers.length === 0) content += "\n\n*No customers match that request.*";
     }
 
     let listedTasks = [];
@@ -223,6 +269,7 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
     }
 
     const taskCards = createdTask ? [createdTask, ...listedTasks] : listedTasks;
+    const customerCards = createdCustomer ? [createdCustomer, ...listedCustomers] : listedCustomers;
 
     setMessages((prev) => [
       ...prev,
@@ -230,6 +277,7 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
         role: "assistant",
         content,
         tasks: taskCards.length > 0 ? taskCards : undefined,
+        customerCards: customerCards.length > 0 ? customerCards : undefined,
       },
     ]);
     setLoading(false);
@@ -276,6 +324,9 @@ SUPPORT_TICKET_CREATE:{"title":"...","description":"...","status":"pending","pri
                       onStatusChange={handleStatusChange} onEdit={setEditTask} />
                   </div>
                 </div>
+              ))}
+              {msg.customerCards && msg.customerCards.map(c => c && (
+                <ChatCustomerCard key={c.id} customer={c} />
               ))}
             </div>
           </div>
