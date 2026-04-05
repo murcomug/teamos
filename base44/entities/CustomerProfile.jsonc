@@ -33,12 +33,12 @@
         "lead",
         "qualified",
         "proposal",
-        "negotiation",
         "closed-won",
+        "closed-lost",
         "onboarding",
         "integrating",
         "testing",
-        "closed-lost"
+        "launched"
       ],
       "default": "lead"
     },

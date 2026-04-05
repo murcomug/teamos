@@ -1,13 +1,13 @@
 const stageConfig = {
-  lead: { bg: "bg-blue-500/15", text: "text-blue-400" },
-  qualified: { bg: "bg-purple-500/15", text: "text-purple-400" },
-  proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
-  negotiation: { bg: "bg-orange-500/15", text: "text-orange-400" },
-  "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400" },
-  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400" },
-  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400" },
-  testing: { bg: "bg-teal-500/15", text: "text-teal-400" },
-  "closed-lost": { bg: "bg-red-500/15", text: "text-red-400" },
+  lead: { bg: "bg-blue-500/15", text: "text-blue-400", label: "Lead" },
+  qualified: { bg: "bg-purple-500/15", text: "text-purple-400", label: "Qualified" },
+  proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400", label: "Proposal" },
+  "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Won" },
+  "closed-lost": { bg: "bg-red-500/15", text: "text-red-400", label: "Lost" },
+  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400", label: "Onboarding" },
+  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400", label: "Integrating" },
+  testing: { bg: "bg-teal-500/15", text: "text-teal-400", label: "Testing" },
+  launched: { bg: "bg-emerald-500/25", text: "text-emerald-300", label: "Launched" },
 };
 
 export default function CustomerList({ customers, onSelect, selectedId }) {
@@ -33,8 +33,8 @@ export default function CustomerList({ customers, onSelect, selectedId }) {
                   )}
                 </div>
                 <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full ${stage.bg} ${stage.text} flex-shrink-0`}>
-                  {c.sales_stage || "lead"}
-                </span>
+                {stage.label || c.sales_stage || "lead"}
+              </span>
               </div>
             </div>
           );

@@ -7,16 +7,19 @@ import { Plus, Pencil, Phone, Mail, Globe, MessageSquare } from "lucide-react";
 import SalesInteractionForm from "./SalesInteractionForm";
 import moment from "moment";
 
+const INITIAL_STAGES = ["lead","qualified","proposal","closed-won","closed-lost"];
+const AFTER_SALES_STAGES = ["onboarding","integrating","testing","launched"];
+
 const stageConfig = {
-  lead: { bg: "bg-blue-500/15", text: "text-blue-400" },
-  qualified: { bg: "bg-purple-500/15", text: "text-purple-400" },
-  proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
-  negotiation: { bg: "bg-orange-500/15", text: "text-orange-400" },
-  "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400" },
-  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400" },
-  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400" },
-  testing: { bg: "bg-teal-500/15", text: "text-teal-400" },
-  "closed-lost": { bg: "bg-red-500/15", text: "text-red-400" },
+  lead: { bg: "bg-blue-500/15", text: "text-blue-400", label: "Lead" },
+  qualified: { bg: "bg-purple-500/15", text: "text-purple-400", label: "Qualified" },
+  proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400", label: "Proposal" },
+  "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Closed Won" },
+  "closed-lost": { bg: "bg-red-500/15", text: "text-red-400", label: "Closed Lost" },
+  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400", label: "Onboarding" },
+  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400", label: "Integrating" },
+  testing: { bg: "bg-teal-500/15", text: "text-teal-400", label: "Testing" },
+  launched: { bg: "bg-emerald-500/25", text: "text-emerald-300", label: "Launched" },
 };
 
 const interactionIcons = { call: Phone, email: Mail, meeting: MessageSquare, demo: Globe, "follow-up": MessageSquare };
@@ -44,8 +47,12 @@ export default function CustomerDetail({ customer, salesRep, onUpdate }) {
   };
 
   const handleSaveCustomer = async () => {
-    await base44.entities.CustomerProfile.update(customer.id, editForm);
-    onUpdate({ ...customer, ...editForm });
+    // Auto-transition closed-won → onboarding
+    const finalForm = editForm.sales_stage === "closed-won"
+      ? { ...editForm, sales_stage: "onboarding" }
+      : editForm;
+    await base44.entities.CustomerProfile.update(customer.id, finalForm);
+    onUpdate({ ...customer, ...finalForm });
     setEditing(false);
   };
 
@@ -91,8 +98,8 @@ export default function CustomerDetail({ customer, salesRep, onUpdate }) {
                 <Select value={editForm.sales_stage} onValueChange={v => setEditForm({...editForm, sales_stage: v})}>
                   <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
-                    {["lead","qualified","proposal","negotiation","closed-won","onboarding","integrating","testing","closed-lost"].map(s => (
-                      <SelectItem key={s} value={s} className="text-foreground text-xs">{s}</SelectItem>
+                    {(AFTER_SALES_STAGES.includes(editForm.sales_stage) ? AFTER_SALES_STAGES : INITIAL_STAGES).map(s => (
+                      <SelectItem key={s} value={s} className="text-foreground text-xs">{stageConfig[s]?.label || s}{s === 'closed-won' ? ' → moves to Onboarding' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

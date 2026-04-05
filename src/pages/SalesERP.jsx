@@ -33,7 +33,11 @@ export default function SalesERP() {
     return matchSearch && matchStage;
   });
 
-  const stageCounts = ["lead","qualified","proposal","negotiation","closed-won","onboarding","integrating","testing","closed-lost"].reduce((acc, s) => {
+  const INITIAL_STAGES = ["lead","qualified","proposal","closed-won","closed-lost"];
+  const AFTER_SALES_STAGES = ["onboarding","integrating","testing","launched"];
+  const ALL_STAGES = [...INITIAL_STAGES, ...AFTER_SALES_STAGES];
+
+  const stageCounts = ALL_STAGES.reduce((acc, s) => {
     acc[s] = customers.filter(c => c.sales_stage === s).length;
     return acc;
   }, {});
@@ -67,23 +71,36 @@ export default function SalesERP() {
         </div>
 
         {/* Pipeline summary */}
-        <div className="flex gap-3 mt-4 flex-wrap">
-          {[
-            { key: "lead", label: "Leads", color: "text-blue-400 bg-blue-500/10" },
-            { key: "qualified", label: "Qualified", color: "text-purple-400 bg-purple-500/10" },
-            { key: "proposal", label: "Proposal", color: "text-yellow-400 bg-yellow-500/10" },
-            { key: "negotiation", label: "Negotiation", color: "text-orange-400 bg-orange-500/10" },
-            { key: "closed-won", label: "Won", color: "text-emerald-400 bg-emerald-500/10" },
-            { key: "onboarding", label: "Onboarding", color: "text-cyan-400 bg-cyan-500/10" },
-            { key: "integrating", label: "Integrating", color: "text-indigo-400 bg-indigo-500/10" },
-            { key: "testing", label: "Testing", color: "text-teal-400 bg-teal-500/10" },
-            { key: "closed-lost", label: "Lost", color: "text-red-400 bg-red-500/10" },
-          ].map(({ key, label, color }) => (
-            <button key={key} onClick={() => setStageFilter(stageFilter === key ? "all" : key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${color} ${stageFilter === key ? "ring-1 ring-current" : "opacity-70 hover:opacity-100"}`}>
-              {label} · {stageCounts[key] || 0}
-            </button>
-          ))}
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground w-20">Initial</span>
+            {[
+              { key: "lead", label: "Leads", color: "text-blue-400 bg-blue-500/10" },
+              { key: "qualified", label: "Qualified", color: "text-purple-400 bg-purple-500/10" },
+              { key: "proposal", label: "Proposal", color: "text-yellow-400 bg-yellow-500/10" },
+              { key: "closed-won", label: "Won", color: "text-emerald-400 bg-emerald-500/10" },
+              { key: "closed-lost", label: "Lost", color: "text-red-400 bg-red-500/10" },
+            ].map(({ key, label, color }) => (
+              <button key={key} onClick={() => setStageFilter(stageFilter === key ? "all" : key)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${color} ${stageFilter === key ? "ring-1 ring-current" : "opacity-70 hover:opacity-100"}`}>
+                {label} · {stageCounts[key] || 0}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground w-20">After Sales</span>
+            {[
+              { key: "onboarding", label: "Onboarding", color: "text-cyan-400 bg-cyan-500/10" },
+              { key: "integrating", label: "Integrating", color: "text-indigo-400 bg-indigo-500/10" },
+              { key: "testing", label: "Testing", color: "text-teal-400 bg-teal-500/10" },
+              { key: "launched", label: "Launched", color: "text-emerald-300 bg-emerald-500/20" },
+            ].map(({ key, label, color }) => (
+              <button key={key} onClick={() => setStageFilter(stageFilter === key ? "all" : key)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${color} ${stageFilter === key ? "ring-1 ring-current" : "opacity-70 hover:opacity-100"}`}>
+                {label} · {stageCounts[key] || 0}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -116,7 +133,7 @@ export default function SalesERP() {
               <Select value={newForm.sales_stage} onValueChange={v => setNewForm({...newForm, sales_stage: v})}>
                 <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
-                  {["lead","qualified","proposal","negotiation","closed-won","onboarding","integrating","testing","closed-lost"].map(s => (
+                  {["lead","qualified","proposal","closed-won","closed-lost"].map(s => (
                     <SelectItem key={s} value={s} className="text-foreground text-xs capitalize">{s}</SelectItem>
                   ))}
                 </SelectContent>
