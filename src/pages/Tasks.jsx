@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { LayoutGrid, List, Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -13,6 +14,7 @@ const columnLabels = { pending: "Pending", ongoing: "Ongoing", stopped: "Stopped
 const columnDots = { pending: "bg-slate-400", ongoing: "bg-primary", stopped: "bg-red-400", completed: "bg-emerald-400" };
 
 export default function Tasks() {
+  const { currentUser, isAdmin, canViewAllTasks } = useCurrentUser();
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -25,12 +27,16 @@ export default function Tasks() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const loadData = () => {
+    const taskFetch = canViewAllTasks
+      ? base44.entities.Task.list()
+      : base44.entities.Task.filter({ assignee: currentUser?.name });
+
     Promise.all([
-      base44.entities.Task.list(),
+      taskFetch,
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
     ]).then(([t, m, d]) => {
-      setTasks(t);
+      setTasks(t || []);
       setMembers(m);
       setDepartments(d);
       setLoading(false);
@@ -38,6 +44,7 @@ export default function Tasks() {
   };
 
   useEffect(() => {
+    if (!currentUser) return;
     loadData();
     const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type === "create") {
@@ -117,12 +124,14 @@ export default function Tasks() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Tasks</h1>
-          <p className="text-sm text-muted-foreground mt-1">{tasks.length} tasks across all departments</p>
+          <p className="text-sm text-muted-foreground mt-1">{tasks.length} task{tasks.length !== 1 ? "s" : ""}{canViewAllTasks ? " across all departments" : " assigned to you"}</p>
         </div>
-        <Button onClick={() => { setEditTask({}); setShowCreate(true); }}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
-          <Plus className="h-4 w-4 mr-2" /> New Task
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => { setEditTask({}); setShowCreate(true); }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
+            <Plus className="h-4 w-4 mr-2" /> New Task
+          </Button>
+        )}
       </div>
 
       {/* Controls */}

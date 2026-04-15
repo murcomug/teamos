@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskListRow from "../components/tasks/TaskListRow";
@@ -12,6 +13,7 @@ const columnLabels = { pending: "Pending", ongoing: "Ongoing", stopped: "Stopped
 const columnDots = { pending: "bg-slate-400", ongoing: "bg-primary", stopped: "bg-red-400", completed: "bg-emerald-400" };
 
 export default function SupportTickets() {
+  const { currentUser, isAdmin } = useCurrentUser();
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -25,12 +27,15 @@ export default function SupportTickets() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const loadData = () => {
+    const taskFetch = isAdmin
+      ? base44.entities.Task.list()
+      : base44.entities.Task.filter({ assignee: currentUser?.name });
     Promise.all([
-      base44.entities.Task.list(),
+      taskFetch,
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
     ]).then(([t, m, d]) => {
-      setTasks(t);
+      setTasks(t || []);
       setMembers(m);
       setDepartments(d);
       setLoading(false);
@@ -38,6 +43,7 @@ export default function SupportTickets() {
   };
 
   useEffect(() => {
+    if (!currentUser) return;
     loadData();
     const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type === "create") {

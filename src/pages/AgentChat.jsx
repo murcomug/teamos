@@ -6,6 +6,7 @@ import MentionInput from "../components/chat/MentionInput";
 import ChatTaskCard from "../components/chat/ChatTaskCard";
 import ChatCustomerCard from "../components/chat/ChatCustomerCard";
 import TaskEditModal from "../components/shared/TaskEditModal";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const quickPrompts = [
   "Create a support ticket",
@@ -15,12 +16,9 @@ const quickPrompts = [
 ];
 
 export default function AgentChat() {
-  // Read member session for permission-scoped responses
-  const memberSession = (() => {
-    try { return JSON.parse(localStorage.getItem("memberSession") || "null"); } catch { return null; }
-  })();
-  const canCompanyWideReports = !memberSession || (memberSession.permissions || []).includes("company_wide_reports");
-  const userId = memberSession?.id || "admin"; // Use member ID or 'admin' for auth users
+  const { currentUser, isAdmin, canViewCompanyReports } = useCurrentUser();
+  const canCompanyWideReports = isAdmin || canViewCompanyReports;
+  const userId = currentUser?.id || "guest";
   const messageCacheKey = `agentChatMessages_${userId}`;
   const dateCacheKey = `agentChatDate_${userId}`;
 
@@ -97,7 +95,7 @@ export default function AgentChat() {
     // Scope visible tasks based on permissions
     const visibleTasks = canCompanyWideReports
       ? tasks
-      : tasks.filter(t => t.assignee === memberSession?.name || t.department === memberSession?.department);
+      : tasks.filter(t => t.assignee === currentUser?.name || t.department === currentUser?.department);
 
     const taskSummary = visibleTasks.slice(0, 20).map(t =>
       `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
@@ -111,7 +109,7 @@ export default function AgentChat() {
 
     const scopeNote = canCompanyWideReports
       ? ""
-      : `\n⚠️ IMPORTANT: This user does NOT have company-wide report access. Only show data related to their own tasks or their department (${memberSession?.department}). Politely refuse requests for company-wide stats or other departments' data.`;
+      : `\n⚠️ IMPORTANT: This user does NOT have company-wide report access. Only show data related to their own tasks or their department (${currentUser?.department}). Politely refuse requests for company-wide stats or other departments' data.`;
 
     // Build conversation history for context (last 10 messages)
     const historyMessages = messages.slice(-10);

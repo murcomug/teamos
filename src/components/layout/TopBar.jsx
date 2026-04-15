@@ -2,24 +2,21 @@ import { Search, Bell, LogOut, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 
 export default function TopBar() {
-  const [user, setUser] = useState(null);
+  const { currentUser, logout } = useCurrentUser();
   const [searchValue, setSearchValue] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUser(u);
-      if (u?.email) {
-        base44.entities.Notification.filter({ read: false, target_user: u.email })
-          .then((n) => setUnreadCount(n?.length || 0))
-          .catch(() => {});
-      }
-    }).catch(() => {});
-  }, []);
+    if (!currentUser?.email) return;
+    base44.entities.Notification.filter({ read: false, target_user: currentUser.email })
+      .then((n) => setUnreadCount(n?.length || 0))
+      .catch(() => {});
+  }, [currentUser?.email]);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -31,13 +28,11 @@ export default function TopBar() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const initials = user?.full_name
-    ? user.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  const initials = currentUser?.name
+    ? currentUser.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
-  const handleLogout = () => {
-    base44.auth.logout();
-  };
+  const handleLogout = () => logout();
 
   return (
     <header className="hidden md:flex h-16 items-center justify-between px-6 border-b border-white/[0.06]"
@@ -72,8 +67,8 @@ export default function TopBar() {
           {dropdownOpen && (
             <div className="absolute right-0 top-10 w-52 bg-[#1a1a24] border border-white/[0.08] rounded-xl shadow-xl z-50 overflow-hidden">
               <div className="px-4 py-3 border-b border-white/[0.06]">
-                <p className="text-sm font-medium text-foreground truncate">{user?.full_name || "Admin"}</p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <p className="text-sm font-medium text-foreground truncate">{currentUser?.name || "User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{currentUser?.email}</p>
               </div>
               <Link to="/settings" onClick={() => setDropdownOpen(false)}
                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-colors">

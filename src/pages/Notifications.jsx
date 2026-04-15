@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Bell, AlertTriangle, CheckCircle, Info, AlertCircle } from "lucide-react";
 import moment from "moment";
 
@@ -21,15 +22,20 @@ const typeConfig = {
 
 export default function Notifications() {
   const navigate = useNavigate();
+  const { currentUser, isAdmin } = useCurrentUser();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.Notification.list("-created_date").then((n) => {
-      setNotifications(n);
+    if (!currentUser) return;
+    const fetch = isAdmin
+      ? base44.entities.Notification.list("-created_date")
+      : base44.entities.Notification.filter({ target_user: currentUser.email }, "-created_date");
+    fetch.then((n) => {
+      setNotifications(n || []);
       setLoading(false);
     });
-  }, []);
+  }, [currentUser?.id, isAdmin]);
 
   const markRead = async (id) => {
     await base44.entities.Notification.update(id, { read: true });

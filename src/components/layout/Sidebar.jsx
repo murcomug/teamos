@@ -1,36 +1,39 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, MessageSquare, CheckSquare, Users, Building2, 
-  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot
+  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot, LogOut
 } from "lucide-react";
 import { useState } from "react";
-
-const navItems = [
-  { path: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { path: "/chat", icon: MessageSquare, label: "Agent Chat" },
-  { path: "/tasks", icon: CheckSquare, label: "Tasks" },
-  { path: "/support-tickets", icon: Headset, label: "Support Tickets" },
-  { path: "/completed-items", icon: CheckCircle2, label: "Completed" },
-  {
-    label: "Company", icon: Building2,
-    children: [
-      { path: "/team", icon: Users, label: "Team" },
-      { path: "/departments", icon: Building2, label: "Departments" },
-    ]
-  },
-  { path: "/reports", icon: BarChart3, label: "Reports" },
-  { path: "/sales-erp", icon: Briefcase, label: "Sales CRM" },
-
-  { path: "/agent-management", icon: Bot, label: "Agents" },
-  { path: "/settings", icon: Settings, label: "Settings" },
-  { path: "/activity-log", icon: History, label: "Activity Log" },
-];
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(["Company"]);
+  const { currentUser, isAdmin, isOperator, canViewReports, canAccessSalesERP, canManageTeam, canManageSettings, canManageAgents, logout } = useCurrentUser();
+
+  // Build nav items dynamically based on role
+  const navItems = [
+    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/chat", icon: MessageSquare, label: "Agent Chat" },
+    { path: "/tasks", icon: CheckSquare, label: "Tasks" },
+    { path: "/support-tickets", icon: Headset, label: "Support Tickets" },
+    { path: "/completed-items", icon: CheckCircle2, label: "Completed" },
+    {
+      label: "Company", icon: Building2,
+      children: [
+        ...(canManageTeam ? [{ path: "/team", icon: Users, label: "Team" }] : []),
+        { path: "/departments", icon: Building2, label: "Departments" },
+      ]
+    },
+    ...(canViewReports ? [{ path: "/reports", icon: BarChart3, label: "Reports" }] : []),
+    ...(canAccessSalesERP ? [{ path: "/sales-erp", icon: Briefcase, label: "Sales CRM" }] : []),
+    ...(canManageAgents ? [{ path: "/agent-management", icon: Bot, label: "Agents" }] : []),
+    ...(canManageSettings ? [{ path: "/settings", icon: Settings, label: "Settings" }] : []),
+    ...(isAdmin ? [{ path: "/activity-log", icon: History, label: "Activity Log" }] : []),
+  ].filter(item => !item.children || item.children.length > 0);
 
   const toggleGroup = (label) => {
     setExpandedGroups(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
@@ -201,6 +204,19 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {/* User info + logout at bottom */}
+        {!collapsed && currentUser && (
+          <div className="px-3 py-3 border-t border-white/[0.06] flex items-center gap-2">
+            <UserAvatar name={currentUser.name} color={currentUser.avatar_color} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-foreground truncate">{currentUser.name}</p>
+              <p className="text-[10px] text-muted-foreground capitalize">{currentUser.role}</p>
+            </div>
+            <button onClick={logout} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors" title="Logout">
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         <div className="p-3 border-t border-white/[0.06]">
           <button
             onClick={() => setCollapsed(!collapsed)}

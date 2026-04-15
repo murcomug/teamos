@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Search } from "lucide-react";
 
 export default function CompletedItems() {
+  const { currentUser, isAdmin } = useCurrentUser();
   const [completedTasks, setCompletedTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,17 +12,21 @@ export default function CompletedItems() {
   const [filterAssignee, setFilterAssignee] = useState("");
 
   const loadData = () => {
+    const taskFetch = isAdmin
+      ? base44.entities.Task.list()
+      : base44.entities.Task.filter({ assignee: currentUser?.name });
     Promise.all([
-      base44.entities.Task.list(),
+      taskFetch,
       base44.entities.TeamMember.list(),
     ]).then(([tasks, m]) => {
-      setCompletedTasks(tasks.filter((t) => t.status === "completed"));
+      setCompletedTasks((tasks || []).filter((t) => t.status === "completed"));
       setMembers(m);
       setLoading(false);
     });
   };
 
   useEffect(() => {
+    if (!currentUser) return;
     loadData();
     const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type === "update" && event.data?.status === "completed") {

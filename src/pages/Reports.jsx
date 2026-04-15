@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import moment from "moment";
@@ -7,6 +8,7 @@ import moment from "moment";
 const COLORS = ["#2dd4bf", "#818cf8", "#f472b6", "#fb923c", "#34d399"];
 
 export default function Reports() {
+  const { currentUser, isAdmin, canViewCompanyReports } = useCurrentUser();
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -14,17 +16,21 @@ export default function Reports() {
   const [velocityPeriod, setVelocityPeriod] = useState("month");
 
   useEffect(() => {
+    if (!currentUser) return;
+    const taskFetch = canViewCompanyReports
+      ? base44.entities.Task.list()
+      : base44.entities.Task.filter({ department: currentUser.department });
     Promise.all([
-      base44.entities.Task.list(),
+      taskFetch,
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
     ]).then(([t, m, d]) => {
-      setTasks(t);
+      setTasks(t || []);
       setMembers(m);
       setDepartments(d);
       setLoading(false);
     });
-  }, []);
+  }, [currentUser?.id, canViewCompanyReports]);
 
   // Calculate velocity by period
   const getVelocityData = () => {
