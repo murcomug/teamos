@@ -8,6 +8,17 @@ import ChatCustomerCard from "../components/chat/ChatCustomerCard";
 import TaskEditModal from "../components/shared/TaskEditModal";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
+function pythonReprToJson(raw) {
+  return raw
+    .replace(/datetime\.datetime\((\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)[^)]*\)/g,
+      (_, y, mo, d, h, mi, s) =>
+        `"${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}T${h.padStart(2,'0')}:${mi.padStart(2,'0')}:${s.padStart(2,'0')}"`)
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/'(?:[^'\\]|\\.)*'/g, m => '"' + m.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"') + '"');
+}
+
 const quickPrompts = [
   "Create a support ticket",
   "What's overdue today?",
@@ -74,15 +85,12 @@ export default function AgentChat() {
         if (!tc.results || tc.status === 'error') continue;
         let results;
         try {
-          // tool results may be single-quoted Python-style — normalise
-          const raw = typeof tc.results === 'string'
-            ? tc.results.replace(/'/g, '"').replace(/None/g, 'null').replace(/True/g, 'true').replace(/False/g, 'false')
-            : tc.results;
-          results = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          const raw = typeof tc.results === 'string' ? pythonReprToJson(tc.results) : JSON.stringify(tc.results);
+          results = JSON.parse(raw);
         } catch { continue; }
 
         const name = (tc.name || '').toLowerCase();
-        if (name.includes('task')) {
+        if (name.includes('task') || name.includes('_task')) {
           const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
           // Merge with freshTasks so we always show the latest server state
           const merged = arr.map(t => {
@@ -121,7 +129,7 @@ export default function AgentChat() {
     const agentTouchedTasks = agentMessages.some(m =>
       m.tool_calls?.some(tc => {
         const n = (tc.name || '').toLowerCase();
-        return (n.includes('create_task') || n.includes('update_task')) && tc.status === 'success';
+        return (n.includes('task')) && tc.status === 'success';
       })
     );
 

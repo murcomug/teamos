@@ -1,5 +1,25 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+/**
+ * Convert a Python repr string to a valid JSON string.
+ * Handles: None→null, True→true, False→false,
+ * single-quoted strings→double-quoted, datetime.datetime(...)→ISO string.
+ */
+function pythonReprToJson(raw) {
+  return raw
+    // datetime.datetime(2026, 4, 16, 13, 42, 59, 3000) → "2026-04-16T13:42:59"
+    .replace(/datetime\.datetime\((\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)[^)]*\)/g,
+      (_, y, mo, d, h, mi, s) =>
+        `"${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}T${h.padStart(2,'0')}:${mi.padStart(2,'0')}:${s.padStart(2,'0')}"`)
+    // None → null, True → true, False → false  (word boundary so we don't break keys)
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    // Replace single-quoted strings with double-quoted strings
+    // This handles 'value' → "value" (including escaped \' inside)
+    .replace(/'(?:[^'\\]|\\.)*'/g, m => '"' + m.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"') + '"');
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -67,13 +87,15 @@ Deno.serve(async (req) => {
 
         let results;
         try {
-          results = typeof tc.results === 'string' ? JSON.parse(tc.results) : tc.results;
+          const raw = typeof tc.results === 'string' ? pythonReprToJson(tc.results) : JSON.stringify(tc.results);
+          results = JSON.parse(raw);
         } catch {
           return tc;
         }
 
         // Scope Task read results
-        if (tc.name && tc.name.toLowerCase().includes('task') && Array.isArray(results)) {
+        const tcName = (tc.name || '').toLowerCase();
+        if ((tcName.includes('task') || tcName.includes('_task')) && Array.isArray(results)) {
           if (!canViewAllTasks) {
             results = results.filter(t =>
               t.assignee === user.full_name || t.department === user.department
@@ -83,9 +105,8 @@ Deno.serve(async (req) => {
         }
 
         // Block CRM data for non-CRM users
-        if (!canAccessSalesERP && tc.name && (
-          tc.name.toLowerCase().includes('customer') ||
-          tc.name.toLowerCase().includes('salesinteraction')
+        if (!canAccessSalesERP && (
+          tcName.includes('customer') || tcName.includes('salesinteraction')
         )) {
           return { ...tc, results: JSON.stringify([]) };
         }
