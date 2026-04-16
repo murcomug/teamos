@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, MessageSquare, CheckSquare, Users, Building2, 
-  BarChart3, Bell, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot, LogOut
+  BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot, LogOut
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -17,6 +17,8 @@ export default function Sidebar() {
     setManualToggle({});
   }, [location.pathname]);
 
+  const { currentUser, isAdmin, canViewReports, canAccessSalesERP, canManageTeam, canManageSettings, canManageAgents, logout } = useCurrentUser();
+
   const isGroupExpanded = (item) => {
     if (item.label in manualToggle) return manualToggle[item.label];
     return item.children.some(c => location.pathname === c.path);
@@ -25,9 +27,9 @@ export default function Sidebar() {
   const toggleGroup = (label, currentlyExpanded) => {
     setManualToggle(prev => ({ ...prev, [label]: !currentlyExpanded }));
   };
-  const { currentUser, isAdmin, isOperator, canViewReports, canAccessSalesERP, canManageTeam, canManageSettings, canManageAgents, logout } = useCurrentUser();
 
-  // Build nav items dynamically based on role
+  const isGroupActive = (children) => children.some(c => location.pathname === c.path);
+
   const navItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/chat", icon: MessageSquare, label: "Agent Chat" },
@@ -47,8 +49,6 @@ export default function Sidebar() {
     ...(canManageSettings ? [{ path: "/settings", icon: Settings, label: "Settings" }] : []),
     ...(isAdmin ? [{ path: "/activity-log", icon: History, label: "Activity Log" }] : []),
   ].filter(item => !item.children || item.children.length > 0);
-
-  const isGroupActive = (children) => children.some(c => location.pathname === c.path);
 
   const NavLink = ({ item }) => {
     const isActive = location.pathname === item.path;
