@@ -162,11 +162,11 @@ export default function Team() {
 
       {/* Table — desktop */}
       <div className="glass-card rounded-xl overflow-hidden hidden md:block">
-        <div className="grid grid-cols-[1fr_120px_140px_130px_80px_100px] gap-4 py-2.5 px-5 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="grid grid-cols-[1fr_100px_120px_120px_70px_120px] gap-3 py-2.5 px-5 border-b border-white/[0.06] text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           <span>Name</span><span>Role</span><span>Department</span><span>WhatsApp</span><span>Status</span><span>Actions</span>
         </div>
         {filtered.map((member) => (
-          <div key={member.id} className="grid grid-cols-[1fr_120px_140px_130px_80px_100px] gap-4 items-center py-3 px-5 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
+          <div key={member.id} className="grid grid-cols-[1fr_100px_120px_120px_70px_120px] gap-3 items-center py-3 px-5 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors">
             <div className="flex items-center gap-3 min-w-0">
               <UserAvatar name={member.name} color={member.avatar_color} size="sm" />
               <div className="min-w-0">
