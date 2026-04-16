@@ -57,8 +57,15 @@ export default function AgentChat() {
     }
   };
 
+  // Refresh task list from server (ensures Tasks page + chat cards stay in sync)
+  const refreshTasks = async () => {
+    const fresh = await base44.entities.Task.list();
+    setTasks(fresh || []);
+    return fresh || [];
+  };
+
   // Extract task/customer cards from agent tool_calls across all messages
-  const extractCards = (msgs) => {
+  const extractCards = (msgs, freshTasks) => {
     const taskCards = [];
     const customerCards = [];
     for (const msg of msgs) {
@@ -67,13 +74,22 @@ export default function AgentChat() {
         if (!tc.results || tc.status === 'error') continue;
         let results;
         try {
-          results = typeof tc.results === 'string' ? JSON.parse(tc.results) : tc.results;
+          // tool results may be single-quoted Python-style — normalise
+          const raw = typeof tc.results === 'string'
+            ? tc.results.replace(/'/g, '"').replace(/None/g, 'null').replace(/True/g, 'true').replace(/False/g, 'false')
+            : tc.results;
+          results = typeof raw === 'string' ? JSON.parse(raw) : raw;
         } catch { continue; }
 
         const name = (tc.name || '').toLowerCase();
         if (name.includes('task')) {
           const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
-          taskCards.push(...arr);
+          // Merge with freshTasks so we always show the latest server state
+          const merged = arr.map(t => {
+            const server = freshTasks?.find(ft => ft.id === t.id);
+            return server || t;
+          });
+          taskCards.push(...merged);
         }
         if (name.includes('customer') || name.includes('customerprofile')) {
           const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
@@ -101,15 +117,18 @@ export default function AgentChat() {
 
     if (!conversationId) setConversationId(newConvId);
 
-    // Sync any newly created/updated tasks into local state
-    const { taskCards, customerCards } = extractCards(agentMessages);
-    if (taskCards.length > 0) {
-      setTasks(prev => {
-        const map = new Map(prev.map(t => [t.id, t]));
-        taskCards.forEach(t => map.set(t.id, t));
-        return [...map.values()];
-      });
-    }
+    // Detect if agent touched any tasks (create/update) and refresh from server
+    const agentTouchedTasks = agentMessages.some(m =>
+      m.tool_calls?.some(tc => {
+        const n = (tc.name || '').toLowerCase();
+        return (n.includes('create_task') || n.includes('update_task')) && tc.status === 'success';
+      })
+    );
+
+    const freshTasks = agentTouchedTasks ? await refreshTasks() : tasks;
+
+    // Sync customer cards
+    const { customerCards } = extractCards(agentMessages, freshTasks);
     if (customerCards.length > 0) {
       setCustomers(prev => {
         const map = new Map(prev.map(c => [c.id, c]));
@@ -123,7 +142,7 @@ export default function AgentChat() {
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => {
         if (m.role !== 'assistant') return m;
-        const { taskCards: tc, customerCards: cc } = extractCards([m]);
+        const { taskCards: tc, customerCards: cc } = extractCards([m], freshTasks);
         return { ...m, taskCards: tc, customerCards: cc };
       });
 
