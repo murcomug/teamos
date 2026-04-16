@@ -3,7 +3,7 @@ import {
   LayoutDashboard, MessageSquare, CheckSquare, Users, Building2, 
   BarChart3, Bell, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot, LogOut
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import UserAvatar from "@/components/shared/UserAvatar";
 
@@ -11,7 +11,20 @@ export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState(["Company"]);
+  const [manualToggle, setManualToggle] = useState({});
+
+  useEffect(() => {
+    setManualToggle({});
+  }, [location.pathname]);
+
+  const isGroupExpanded = (item) => {
+    if (item.label in manualToggle) return manualToggle[item.label];
+    return item.children.some(c => location.pathname === c.path);
+  };
+
+  const toggleGroup = (label, currentlyExpanded) => {
+    setManualToggle(prev => ({ ...prev, [label]: !currentlyExpanded }));
+  };
   const { currentUser, isAdmin, isOperator, canViewReports, canAccessSalesERP, canManageTeam, canManageSettings, canManageAgents, logout } = useCurrentUser();
 
   // Build nav items dynamically based on role
@@ -34,10 +47,6 @@ export default function Sidebar() {
     ...(canManageSettings ? [{ path: "/settings", icon: Settings, label: "Settings" }] : []),
     ...(isAdmin ? [{ path: "/activity-log", icon: History, label: "Activity Log" }] : []),
   ].filter(item => !item.children || item.children.length > 0);
-
-  const toggleGroup = (label) => {
-    setExpandedGroups(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
-  };
 
   const isGroupActive = (children) => children.some(c => location.pathname === c.path);
 
@@ -98,10 +107,10 @@ export default function Sidebar() {
               {navItems.map((item) => {
                 if (item.children) {
                   const isActive = isGroupActive(item.children);
-                  const isExpanded = expandedGroups.includes(item.label);
+                  const isExpanded = isGroupExpanded(item);
                   return (
                     <div key={item.label}>
-                      <button onClick={() => toggleGroup(item.label)}
+                      <button onClick={() => toggleGroup(item.label, isExpanded)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
                           ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"}`}>
                         <item.icon className={`h-[18px] w-[18px] flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
@@ -152,11 +161,11 @@ export default function Sidebar() {
           {navItems.map((item) => {
             if (item.children) {
               const isActive = isGroupActive(item.children);
-              const isExpanded = expandedGroups.includes(item.label);
+              const isExpanded = isGroupExpanded(item);
               return (
                 <div key={item.label}>
                   <button
-                    onClick={() => !collapsed && toggleGroup(item.label)}
+                    onClick={() => !collapsed && toggleGroup(item.label, isExpanded)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                       ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"}`}
                   >
