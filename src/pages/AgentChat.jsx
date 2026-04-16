@@ -97,9 +97,11 @@ export default function AgentChat() {
       ? tasks
       : tasks.filter(t => t.assignee === currentUser?.name || t.department === currentUser?.department);
 
-    const taskSummary = visibleTasks.slice(0, 20).map(t =>
-      `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
-    ).join("\n");
+    const taskSummary = visibleTasks.length === 0
+      ? "No tasks available."
+      : visibleTasks.slice(0, 50).map(t =>
+          `ID:${t.id} "${t.title}" status:${t.status} priority:${t.priority} assignee:${t.assignee || 'unassigned'} dept:${t.department || 'none'} due:${t.due_date || 'none'} type:${t.is_support_ticket ? 'ticket' : 'task'}`
+        ).join("\n");
 
     const memberSummary = members.map(m => `${m.name} (${m.department}, ${m.role})`).join(", ");
     const deptSummary = departments.map(d => d.name).join(", ");
@@ -135,6 +137,7 @@ CUSTOMERS:
 ${customerSummary || 'No customers yet.'}
 
 TODAY: ${new Date().toISOString().split("T")[0]}
+NOTE: "Open tasks" means tasks with status "pending", "ongoing", or "stopped". If the TASKS section above says "No tasks available.", tell the user there are currently no tasks in the system.
 ${scopeNote}${mentionNote}
 
 CONVERSATION HISTORY:
