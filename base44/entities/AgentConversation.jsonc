@@ -1,0 +1,27 @@
+{
+  "name": "AgentConversation",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "title": "User ID"
+    },
+    "agent_name": {
+      "type": "string",
+      "title": "Agent Name",
+      "default": "master_agent"
+    },
+    "title": {
+      "type": "string",
+      "title": "Conversation Title"
+    },
+    "base44_conversation_id": {
+      "type": "string",
+      "title": "Base44 Conversation ID"
+    }
+  },
+  "required": [
+    "user_id",
+    "agent_name"
+  ]
+}
