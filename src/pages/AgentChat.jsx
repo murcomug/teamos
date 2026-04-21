@@ -26,6 +26,43 @@ const quickPrompts = [
   "Give me the daily status report",
 ];
 
+// Module-level so it can be used both inside useEffect and in sendMessage
+function extractCards(msgs, freshTasks) {
+  const taskCards = [];
+  const customerCards = [];
+  for (const msg of msgs) {
+    if (!msg.tool_calls) continue;
+    for (const tc of msg.tool_calls) {
+      if (!tc.results || tc.status === 'error') continue;
+      let results;
+      try {
+        const raw = typeof tc.results === 'string' ? pythonReprToJson(tc.results) : JSON.stringify(tc.results);
+        results = JSON.parse(raw);
+      } catch { continue; }
+
+      const name = (tc.name || '').toLowerCase();
+      const isTaskTool = name.includes('task');
+      const isCustomerTool = name.includes('customer') || name.includes('customerprofile');
+
+      if (isTaskTool) {
+        const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
+        const merged = arr.map(t => {
+          const server = freshTasks?.find(ft => ft.id === t.id);
+          return server || t;
+        });
+        taskCards.push(...merged);
+      }
+      if (isCustomerTool) {
+        const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
+        customerCards.push(...arr);
+      }
+    }
+  }
+  const uniqueTasks = [...new Map(taskCards.map(t => [t.id, t])).values()];
+  const uniqueCustomers = [...new Map(customerCards.map(c => [c.id, c])).values()];
+  return { taskCards: uniqueTasks, customerCards: uniqueCustomers };
+}
+
 export default function AgentChat() {
   const { currentUser } = useCurrentUser();
   const [messages, setMessages] = useState([]);
@@ -34,23 +71,56 @@ export default function AgentChat() {
   const [tasks, setTasks] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [conversationId, setConversationId] = useState(null);
+  const [sessionRecordId, setSessionRecordId] = useState(null); // AgentConversation entity ID
   const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(true);
   const [editTask, setEditTask] = useState(null);
   const scrollRef = useRef(null);
 
+  // On mount: load entity data + restore today's conversation session
+  // Wait until currentUser is resolved before attempting session lookup
   useEffect(() => {
+    if (currentUser === undefined) return; // still loading
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
     Promise.all([
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
       base44.entities.Task.list(),
       base44.entities.CustomerProfile.list(),
-    ]).then(([m, d, t, c]) => {
+      // Find today's session for this user
+      currentUser?.id
+        ? base44.entities.AgentConversation.filter({ user_id: currentUser.id, agent_name: 'master_agent', title: today })
+        : Promise.resolve([]),
+    ]).then(async ([m, d, t, c, sessions]) => {
       setMembers(m);
       setDepartments(d);
       setTasks(t || []);
       setCustomers(c || []);
+
+      const todaySession = sessions?.[0];
+      if (todaySession?.base44_conversation_id) {
+        try {
+          // Restore the conversation messages from the cloud
+          const conv = await base44.agents.getConversation(todaySession.base44_conversation_id);
+          const msgs = conv?.messages || [];
+          const renderable = msgs
+            .filter(m => m.role === 'user' || m.role === 'assistant')
+            .map(m => {
+              if (m.role !== 'assistant') return m;
+              const { taskCards: tc, customerCards: cc } = extractCards([m], t || []);
+              return { ...m, taskCards: tc, customerCards: cc };
+            });
+          setMessages(renderable);
+          setConversationId(todaySession.base44_conversation_id);
+          setSessionRecordId(todaySession.id);
+        } catch {
+          // If conversation no longer exists, start fresh
+        }
+      }
+      setRestoring(false);
     });
-  }, []);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,45 +145,7 @@ export default function AgentChat() {
     return fresh || [];
   };
 
-  // Extract task/customer cards from agent tool_calls across all messages
-  const extractCards = (msgs, freshTasks) => {
-    const taskCards = [];
-    const customerCards = [];
-    for (const msg of msgs) {
-      if (!msg.tool_calls) continue;
-      for (const tc of msg.tool_calls) {
-        if (!tc.results || tc.status === 'error') continue;
-        let results;
-        try {
-          const raw = typeof tc.results === 'string' ? pythonReprToJson(tc.results) : JSON.stringify(tc.results);
-          results = JSON.parse(raw);
-        } catch { continue; }
 
-        const name = (tc.name || '').toLowerCase();
-        // Match any tool operating on Task entity: read_Task, create_Task, update_Task
-        const isTaskTool = name.includes('task');
-        const isCustomerTool = name.includes('customer') || name.includes('customerprofile');
-
-        if (isTaskTool) {
-          const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
-          // Merge with freshTasks so we always show the latest server state
-          const merged = arr.map(t => {
-            const server = freshTasks?.find(ft => ft.id === t.id);
-            return server || t;
-          });
-          taskCards.push(...merged);
-        }
-        if (isCustomerTool) {
-          const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
-          customerCards.push(...arr);
-        }
-      }
-    }
-    // Deduplicate by id
-    const uniqueTasks = [...new Map(taskCards.map(t => [t.id, t])).values()];
-    const uniqueCustomers = [...new Map(customerCards.map(c => [c.id, c])).values()];
-    return { taskCards: uniqueTasks, customerCards: uniqueCustomers };
-  };
 
   const sendMessage = async (text) => {
     const userMsg = { role: "user", content: text, _local: true };
@@ -127,7 +159,24 @@ export default function AgentChat() {
 
     const { conversation_id: newConvId, messages: agentMessages } = result.data;
 
-    if (!conversationId) setConversationId(newConvId);
+    if (!conversationId) {
+      setConversationId(newConvId);
+      // Persist today's session in the cloud so it can be restored on any device
+      const today = new Date().toISOString().slice(0, 10);
+      if (currentUser?.id) {
+        if (sessionRecordId) {
+          await base44.entities.AgentConversation.update(sessionRecordId, { base44_conversation_id: newConvId });
+        } else {
+          const record = await base44.entities.AgentConversation.create({
+            user_id: currentUser.id,
+            agent_name: 'master_agent',
+            title: today,
+            base44_conversation_id: newConvId,
+          });
+          setSessionRecordId(record.id);
+        }
+      }
+    }
 
     // Detect if agent touched any tasks (create/update) and refresh from server
     const agentTouchedTasks = agentMessages.some(m =>
@@ -163,7 +212,12 @@ export default function AgentChat() {
     setLoading(false);
   };
 
-  const startNewConversation = () => {
+  const startNewConversation = async () => {
+    // Delete the cloud session record so next message starts a fresh conversation
+    if (sessionRecordId) {
+      await base44.entities.AgentConversation.delete(sessionRecordId);
+      setSessionRecordId(null);
+    }
     setConversationId(null);
     setMessages([]);
   };
@@ -195,7 +249,14 @@ export default function AgentChat() {
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4 pb-4">
-        {messages.length === 0 && !loading && (
+        {restoring && (
+          <div className="flex justify-center py-4">
+            <span className="text-xs text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" /> Restoring your session...
+            </span>
+          </div>
+        )}
+        {!restoring && messages.length === 0 && !loading && (
           <div className="flex justify-start">
             <div className="glass-card rounded-2xl px-4 py-3 max-w-[85%]">
               <p className="text-sm text-foreground/90">
