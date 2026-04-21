@@ -90,7 +90,11 @@ export default function AgentChat() {
         } catch { continue; }
 
         const name = (tc.name || '').toLowerCase();
-        if (name.includes('task') || name.includes('_task')) {
+        // Match any tool operating on Task entity: read_Task, create_Task, update_Task
+        const isTaskTool = name.includes('task');
+        const isCustomerTool = name.includes('customer') || name.includes('customerprofile');
+
+        if (isTaskTool) {
           const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
           // Merge with freshTasks so we always show the latest server state
           const merged = arr.map(t => {
@@ -99,7 +103,7 @@ export default function AgentChat() {
           });
           taskCards.push(...merged);
         }
-        if (name.includes('customer') || name.includes('customerprofile')) {
+        if (isCustomerTool) {
           const arr = Array.isArray(results) ? results : (results?.id ? [results] : []);
           customerCards.push(...arr);
         }
@@ -129,7 +133,8 @@ export default function AgentChat() {
     const agentTouchedTasks = agentMessages.some(m =>
       m.tool_calls?.some(tc => {
         const n = (tc.name || '').toLowerCase();
-        return (n.includes('task')) && tc.status === 'success';
+        // Only refresh on writes (create/update), not reads
+        return (n.includes('create_task') || n.includes('update_task')) && tc.status === 'success';
       })
     );
 
