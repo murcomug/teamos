@@ -27,6 +27,17 @@ const quickPrompts = [
 ];
 
 // Module-level so it can be used both inside useEffect and in sendMessage
+function parseResults(raw) {
+  if (!raw) return null;
+  // Already an object/array — return directly
+  if (typeof raw !== 'string') return raw;
+  // Try plain JSON first (most common case)
+  try { return JSON.parse(raw); } catch {}
+  // Fall back to Python repr conversion
+  try { return JSON.parse(pythonReprToJson(raw)); } catch {}
+  return null;
+}
+
 function extractCards(msgs, freshTasks) {
   const taskCards = [];
   const customerCards = [];
@@ -34,11 +45,8 @@ function extractCards(msgs, freshTasks) {
     if (!msg.tool_calls) continue;
     for (const tc of msg.tool_calls) {
       if (!tc.results || tc.status === 'error') continue;
-      let results;
-      try {
-        const raw = typeof tc.results === 'string' ? pythonReprToJson(tc.results) : JSON.stringify(tc.results);
-        results = JSON.parse(raw);
-      } catch { continue; }
+      const results = parseResults(tc.results);
+      if (!results) continue;
 
       const name = (tc.name || '').toLowerCase();
       const isTaskTool = name.includes('task');
@@ -106,8 +114,13 @@ export default function AgentChat() {
           const msgs = conv?.messages || [];
           const { taskCards: allTc, customerCards: allCc } = extractCards(msgs, t || []);
           const visibleMsgs = msgs.filter(m => m.role === 'user' || m.role === 'assistant');
-          const lastAsstIdx = [...visibleMsgs].reverse().findIndex(m => m.role === 'assistant');
-          const attachAt = lastAsstIdx >= 0 ? visibleMsgs.length - 1 - lastAsstIdx : -1;
+          let attachAt = -1;
+          for (let i = visibleMsgs.length - 1; i >= 0; i--) {
+            if (visibleMsgs[i].role === 'assistant') {
+              if (attachAt === -1) attachAt = i;
+              if (visibleMsgs[i].content) { attachAt = i; break; }
+            }
+          }
           const renderable = visibleMsgs.map((m, i) => {
             if (m.role !== 'assistant') return m;
             if (i === attachAt) return { ...m, taskCards: allTc, customerCards: allCc };
@@ -201,16 +214,19 @@ export default function AgentChat() {
       });
     }
 
-    // Build renderable message list from the full conversation
-    // We pass ALL messages to extractCards (including 'tool' role) so tool results are found,
-    // but only render user/assistant bubbles in the UI.
-    // Cards are attached to the last assistant message before them.
+    // Build renderable message list — extract cards from ALL messages (tool results may be on
+    // any message type), then attach them to the last assistant message with content.
     const { taskCards: allTaskCards, customerCards: allCustomerCards } = extractCards(agentMessages, freshTasks);
 
     const visibleMessages = agentMessages.filter(m => m.role === 'user' || m.role === 'assistant');
-    // Find the last assistant message index and attach all cards there
-    const lastAssistantIdx = [...visibleMessages].reverse().findIndex(m => m.role === 'assistant');
-    const attachIdx = lastAssistantIdx >= 0 ? visibleMessages.length - 1 - lastAssistantIdx : -1;
+    // Prefer last assistant with content, fall back to last assistant
+    let attachIdx = -1;
+    for (let i = visibleMessages.length - 1; i >= 0; i--) {
+      if (visibleMessages[i].role === 'assistant') {
+        if (attachIdx === -1) attachIdx = i; // fallback
+        if (visibleMessages[i].content) { attachIdx = i; break; }
+      }
+    }
 
     const renderable = visibleMessages.map((m, i) => {
       if (m.role !== 'assistant') return m;
@@ -281,17 +297,19 @@ export default function AgentChat() {
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] ${msg.role === "user" ? "ml-auto" : ""}`}>
-              <div className={`rounded-2xl px-4 py-3 ${
-                msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
-              }`}>
-                {msg.role === "user" ? (
-                  <p className="text-sm">{msg.content}</p>
-                ) : (
-                  <ReactMarkdown className="text-sm prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-foreground/90 prose-strong:text-foreground prose-li:text-foreground/90">
-                    {msg.content || ""}
-                  </ReactMarkdown>
-                )}
-              </div>
+              {(msg.role === "user" || msg.content) && (
+                <div className={`rounded-2xl px-4 py-3 ${
+                  msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
+                }`}>
+                  {msg.role === "user" ? (
+                    <p className="text-sm">{msg.content}</p>
+                  ) : (
+                    <ReactMarkdown className="text-sm prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-foreground/90 prose-strong:text-foreground prose-li:text-foreground/90">
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
+              )}
 
               {/* Task cards from tool results */}
               {msg.taskCards && msg.taskCards.length > 0 && msg.taskCards.map((task, i) => task && (
