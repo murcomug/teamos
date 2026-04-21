@@ -104,13 +104,15 @@ export default function AgentChat() {
           // Restore the conversation messages from the cloud
           const conv = await base44.agents.getConversation(todaySession.base44_conversation_id);
           const msgs = conv?.messages || [];
-          const renderable = msgs
-            .filter(m => m.role === 'user' || m.role === 'assistant')
-            .map(m => {
-              if (m.role !== 'assistant') return m;
-              const { taskCards: tc, customerCards: cc } = extractCards([m], t || []);
-              return { ...m, taskCards: tc, customerCards: cc };
-            });
+          const { taskCards: allTc, customerCards: allCc } = extractCards(msgs, t || []);
+          const visibleMsgs = msgs.filter(m => m.role === 'user' || m.role === 'assistant');
+          const lastAsstIdx = [...visibleMsgs].reverse().findIndex(m => m.role === 'assistant');
+          const attachAt = lastAsstIdx >= 0 ? visibleMsgs.length - 1 - lastAsstIdx : -1;
+          const renderable = visibleMsgs.map((m, i) => {
+            if (m.role !== 'assistant') return m;
+            if (i === attachAt) return { ...m, taskCards: allTc, customerCards: allCc };
+            return m;
+          });
           setMessages(renderable);
           setConversationId(todaySession.base44_conversation_id);
           setSessionRecordId(todaySession.id);
@@ -200,13 +202,23 @@ export default function AgentChat() {
     }
 
     // Build renderable message list from the full conversation
-    const renderable = agentMessages
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => {
-        if (m.role !== 'assistant') return m;
-        const { taskCards: tc, customerCards: cc } = extractCards([m], freshTasks);
-        return { ...m, taskCards: tc, customerCards: cc };
-      });
+    // We pass ALL messages to extractCards (including 'tool' role) so tool results are found,
+    // but only render user/assistant bubbles in the UI.
+    // Cards are attached to the last assistant message before them.
+    const { taskCards: allTaskCards, customerCards: allCustomerCards } = extractCards(agentMessages, freshTasks);
+
+    const visibleMessages = agentMessages.filter(m => m.role === 'user' || m.role === 'assistant');
+    // Find the last assistant message index and attach all cards there
+    const lastAssistantIdx = [...visibleMessages].reverse().findIndex(m => m.role === 'assistant');
+    const attachIdx = lastAssistantIdx >= 0 ? visibleMessages.length - 1 - lastAssistantIdx : -1;
+
+    const renderable = visibleMessages.map((m, i) => {
+      if (m.role !== 'assistant') return m;
+      if (i === attachIdx) {
+        return { ...m, taskCards: allTaskCards, customerCards: allCustomerCards };
+      }
+      return m;
+    });
 
     setMessages(renderable);
     setLoading(false);
