@@ -144,12 +144,15 @@ export default function AgentChat() {
   const handleStatusChange = async (id, status) => {
     await base44.entities.Task.update(id, { status });
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+    // Also update editTask if it's open for this task
+    setEditTask(prev => prev?.id === id ? { ...prev, status } : prev);
   };
 
   const handleEditSave = async (form) => {
     if (editTask?.id) {
       await base44.entities.Task.update(editTask.id, form);
       setTasks(prev => prev.map(t => t.id === editTask.id ? { ...t, ...form } : t));
+      setEditTask(prev => prev ? { ...prev, ...form } : prev);
     }
   };
 
@@ -316,7 +319,7 @@ export default function AgentChat() {
                 <div key={task.id} className="flex items-start gap-2 mt-2">
                   <span className="text-xs font-mono text-muted-foreground mt-4 w-5 text-right flex-shrink-0">{i + 1}.</span>
                   <div className="flex-1">
-                    <ChatTaskCard task={task} members={members}
+                    <ChatTaskCard task={task} liveTask={tasks.find(t => t.id === task.id)} members={members}
                       onStatusChange={handleStatusChange} onEdit={setEditTask} />
                   </div>
                 </div>

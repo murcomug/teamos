@@ -29,6 +29,8 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
         customer_name: task.customer_name || "",
         customer_id: task.customer_id || "",
       });
+      // Always open existing tasks in read-only mode
+      setReadOnly(!!task.id);
     }
     setBlockingError("");
   }, [task]);
@@ -50,16 +52,8 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-lg">
-        <DialogHeader className="flex items-center justify-between">
+        <DialogHeader>
           <DialogTitle className="text-foreground">{task?.id ? "Task Details" : "New Task"}</DialogTitle>
-          {task?.id && (
-            <button
-              onClick={() => setReadOnly(!readOnly)}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/15 text-primary hover:bg-primary/25 transition-all"
-            >
-              {readOnly ? "Edit" : "Cancel Edit"}
-            </button>
-          )}
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
@@ -174,6 +168,16 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground">Close</Button>
+            {task?.id && readOnly && (
+              <Button onClick={() => setReadOnly(false)} className="bg-primary/15 text-primary hover:bg-primary/25 border-0">
+                Edit
+              </Button>
+            )}
+            {task?.id && !readOnly && (
+              <Button variant="ghost" onClick={() => setReadOnly(true)} className="text-muted-foreground hover:text-foreground">
+                Cancel
+              </Button>
+            )}
             {!readOnly && (
               <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 {task?.id ? "Save Changes" : "Create Task"}
