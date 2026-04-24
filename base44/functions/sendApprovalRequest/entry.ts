@@ -61,8 +61,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const reqBody = await req.json();
-
-    // Support both direct invocation { approval } and entity automation payload { data }
+    // Support both direct invocation { approval: {...} } and entity automation { data: {...} }
     const approval = reqBody.approval || reqBody.data;
 
     if (!approval) {
@@ -80,7 +79,7 @@ Deno.serve(async (req) => {
     const actionLabel = actionTypeLabel(approval.action_type);
     const summary = payloadSummary(approval.action_type, approval.payload);
 
-    const emailBody = `${approval.initiated_by_name} has initiated the following action that requires your approval:
+    const body = `${approval.initiated_by_name} has initiated the following action that requires your approval:
 
 Action: ${actionLabel}
 Details: ${summary}
@@ -90,7 +89,7 @@ Please log in to TeamOS and navigate to Approvals to review this request.
 This action will not be executed until approved by another admin.`;
 
     const results = await Promise.allSettled(
-      targets.map(admin => sendEmail(admin.email, "TeamOS — Action Pending Your Approval", emailBody))
+      targets.map(admin => sendEmail(admin.email, "TeamOS — Action Pending Your Approval", body))
     );
 
     const sent = results.filter(r => r.status === "fulfilled" && r.value).length;

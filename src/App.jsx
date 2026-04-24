@@ -53,6 +53,7 @@ const AdminApp = () => {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/completed-items" element={<CompletedItems />} />
               <Route path="/sales-erp" element={<SalesERP />} />
+              <Route path="/approvals" element={<Approvals />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />
           </Routes>
