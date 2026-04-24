@@ -22,26 +22,8 @@ import MemberLogin from './pages/MemberLogin';
 import SalesERP from './pages/SalesERP';
 import AgentManagement from './pages/AgentManagement';
 
-/**
- * OperatorRoute — allows access if a member session exists (operator login).
- * Redirects to /member-login if not authenticated.
- */
-const OperatorRoute = ({ children }) => {
-  const { memberSession, loading } = useMemberSession();
-  if (loading) return (
-    <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#0a0a0f" }}>
-      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
-    </div>
-  );
-  if (!memberSession) return <Navigate to="/member-login" replace />;
-  return children;
-};
-
-/**
- * AdminRoute — allows access only if Base44 native auth is active.
- */
 const AdminApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
   const { memberSession } = useMemberSession();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -56,7 +38,7 @@ const AdminApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // If an operator is logged in, show the app with their session
+      // If an operator is logged in via member session, show the app
       if (memberSession) {
         return (
           <Routes>
@@ -75,8 +57,8 @@ const AdminApp = () => {
           </Routes>
         );
       }
-      navigateToLogin();
-      return null;
+      // No session at all — redirect to unified login
+      return <Navigate to="/member-login" replace />;
     }
   }
 
