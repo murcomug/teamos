@@ -112,19 +112,23 @@ export default function AgentChat() {
           // Restore the conversation messages from the cloud
           const conv = await base44.agents.getConversation(todaySession.base44_conversation_id);
           const msgs = conv?.messages || [];
-          const { taskCards: allTc, customerCards: allCc } = extractCards(msgs, t || []);
           const visibleMsgs = msgs.filter(m => m.role === 'user' || m.role === 'assistant');
-          let attachAt = -1;
-          for (let i = visibleMsgs.length - 1; i >= 0; i--) {
-            if (visibleMsgs[i].role === 'assistant') {
-              if (attachAt === -1) attachAt = i;
-              if (visibleMsgs[i].content) { attachAt = i; break; }
-            }
-          }
-          const renderable = visibleMsgs.map((m, i) => {
+          // For each assistant turn, only attach cards from tool calls in that same round
+          // (from the preceding user message up to and including this assistant message).
+          const rawMsgs = msgs; // full list including tool messages
+          const renderable = visibleMsgs.map((m, visIdx) => {
             if (m.role !== 'assistant') return m;
-            if (i === attachAt) return { ...m, taskCards: allTc, customerCards: allCc };
-            return m;
+            // Find this assistant message's index in the raw list
+            const rawIdx = rawMsgs.findIndex(r => r.id === m.id);
+            // Walk back to find the preceding user message in the raw list
+            let roundStart = 0;
+            for (let i = rawIdx - 1; i >= 0; i--) {
+              if (rawMsgs[i].role === 'user') { roundStart = i; break; }
+            }
+            const roundMsgs = rawMsgs.slice(roundStart, rawIdx + 1);
+            const { taskCards: tc, customerCards: cc } = extractCards(roundMsgs, t || []);
+            if (tc.length === 0 && cc.length === 0) return m;
+            return { ...m, taskCards: tc, customerCards: cc };
           });
           setMessages(renderable);
           setConversationId(todaySession.base44_conversation_id);
@@ -223,7 +227,11 @@ export default function AgentChat() {
 
     // Build renderable message list — extract cards from ALL messages (tool results may be on
     // any message type), then attach them to the last assistant message with content.
-    const { taskCards: allTaskCards, customerCards: allCustomerCards } = extractCards(agentMessages, freshTasks);
+    // Only extract cards from the NEW messages added in this round (after the user's message).
+    // Find the index of the last user message, then only look at messages after it.
+    const lastUserIdx = agentMessages.map(m => m.role).lastIndexOf('user');
+    const newMessages = lastUserIdx >= 0 ? agentMessages.slice(lastUserIdx) : agentMessages;
+    const { taskCards: allTaskCards, customerCards: allCustomerCards } = extractCards(newMessages, freshTasks);
 
     const visibleMessages = agentMessages.filter(m => m.role === 'user' || m.role === 'assistant');
     // Prefer last assistant with content, fall back to last assistant
