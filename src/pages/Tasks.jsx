@@ -27,16 +27,13 @@ export default function Tasks() {
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const loadData = () => {
-    const taskFetch = canViewAllTasks
-      ? base44.entities.Task.list()
-      : base44.entities.Task.filter({ assignee: currentUser?.name });
-
     Promise.all([
-      taskFetch,
+      base44.entities.Task.list(),
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
     ]).then(([t, m, d]) => {
-      setTasks(t || []);
+      // Only show non-support-ticket tasks
+      setTasks((t || []).filter(task => !task.is_support_ticket));
       setMembers(m);
       setDepartments(d);
       setLoading(false);
@@ -48,9 +45,13 @@ export default function Tasks() {
     loadData();
     const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type === "create") {
-        setTasks((prev) => [event.data, ...prev]);
+        if (!event.data?.is_support_ticket) setTasks((prev) => [event.data, ...prev]);
       } else if (event.type === "update") {
-        setTasks((prev) => prev.map((t) => t.id === event.id ? event.data : t));
+        if (event.data?.is_support_ticket) {
+          setTasks((prev) => prev.filter((t) => t.id !== event.id));
+        } else {
+          setTasks((prev) => prev.map((t) => t.id === event.id ? event.data : t));
+        }
       } else if (event.type === "delete") {
         setTasks((prev) => prev.filter((t) => t.id !== event.id));
       }

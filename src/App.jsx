@@ -21,6 +21,7 @@ import ActivityLog from './pages/ActivityLog';
 import MemberLogin from './pages/MemberLogin';
 import SalesERP from './pages/SalesERP';
 import AgentManagement from './pages/AgentManagement';
+import Approvals from './pages/Approvals';
 
 const AdminApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
@@ -78,6 +79,7 @@ const AdminApp = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/sales-erp" element={<SalesERP />} />
         <Route path="/agent-management" element={<AgentManagement />} />
+        <Route path="/approvals" element={<Approvals />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

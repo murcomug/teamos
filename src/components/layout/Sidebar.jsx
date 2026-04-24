@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, MessageSquare, CheckSquare, Users, Building2, 
-  BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot, LogOut
+  BarChart3, Settings, ChevronLeft, ChevronRight, ChevronDown, Menu, X, Headset, CheckCircle2, History, Briefcase, Bot, LogOut, ShieldCheck
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { base44 } from "@/api/base44Client";
 import UserAvatar from "@/components/shared/UserAvatar";
 
 export default function Sidebar() {
@@ -17,7 +18,25 @@ export default function Sidebar() {
     setManualToggle({});
   }, [location.pathname]);
 
-  const { currentUser, isAdmin, canViewReports, canAccessSalesERP, canManageTeam, canManageSettings, canManageAgents, logout } = useCurrentUser();
+  const { currentUser, isAdmin, canViewReports, canAccessSalesERP, canManageTeam, canManageSettings, canManageAgents, canViewAuditLog, canViewApprovals, logout } = useCurrentUser();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    base44.entities.PendingApproval.filter({ status: "pending" }).then(data => {
+      setPendingCount(data?.length || 0);
+    });
+    const unsubscribe = base44.entities.PendingApproval.subscribe((event) => {
+      if (event.type === "create" && event.data?.status === "pending") {
+        setPendingCount(prev => prev + 1);
+      } else if (event.type === "update") {
+        if (event.data?.status !== "pending") {
+          setPendingCount(prev => Math.max(0, prev - 1));
+        }
+      }
+    });
+    return unsubscribe;
+  }, [isAdmin]);
 
   const isGroupExpanded = (item) => {
     if (item.label in manualToggle) return manualToggle[item.label];
@@ -47,7 +66,8 @@ export default function Sidebar() {
     ...(canAccessSalesERP ? [{ path: "/sales-erp", icon: Briefcase, label: "Sales CRM" }] : []),
     ...(canManageAgents ? [{ path: "/agent-management", icon: Bot, label: "Agents" }] : []),
     ...(canManageSettings ? [{ path: "/settings", icon: Settings, label: "Settings" }] : []),
-    ...(isAdmin ? [{ path: "/activity-log", icon: History, label: "Activity Log" }] : []),
+    ...(canViewApprovals ? [{ path: "/approvals", icon: ShieldCheck, label: "Approvals", badge: pendingCount }] : []),
+    ...(canViewAuditLog ? [{ path: "/activity-log", icon: History, label: "Audit Log" }] : []),
   ].filter(item => !item.children || item.children.length > 0);
 
   const NavLink = ({ item }) => {
@@ -63,7 +83,12 @@ export default function Sidebar() {
           }`}
       >
         <item.icon className={`h-[18px] w-[18px] flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
-        <span>{item.label}</span>
+        <span className="flex-1">{item.label}</span>
+        {item.badge > 0 && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 min-w-[18px] text-center">
+            {item.badge}
+          </span>
+        )}
       </Link>
     );
   };
@@ -207,7 +232,12 @@ export default function Sidebar() {
                   }`}
               >
                 <item.icon className={`h-[18px] w-[18px] flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && <span className="flex-1">{item.label}</span>}
+                {!collapsed && item.badge > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 min-w-[18px] text-center">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Search, Filter } from "lucide-react";
 import moment from "moment";
 
@@ -12,12 +15,19 @@ const actionIcons = {
 };
 
 export default function ActivityLog() {
+  const navigate = useNavigate();
+  const { canViewAuditLog, loading: authLoading } = useCurrentUser();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterAction, setFilterAction] = useState("all");
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!canViewAuditLog) {
+      navigate("/", { replace: true });
+      return;
+    }
     base44.entities.ActivityLog.list('-created_date', 100).then((data) => {
       setLogs(data);
       setLoading(false);
@@ -30,7 +40,7 @@ export default function ActivityLog() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [authLoading, canViewAuditLog]);
 
   const filtered = logs.filter((log) => {
     const matchesSearch = log.user_name?.toLowerCase().includes(search.toLowerCase()) ||

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Plus, Users, CheckSquare, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import TaskEditModal from "../components/shared/TaskEditModal";
+import { useToast } from "@/components/ui/use-toast";
 
 const DEFAULT_DEPARTMENTS = [
   { name: "Finance", icon: "💰", head: "" },
@@ -17,6 +19,8 @@ const DEFAULT_DEPARTMENTS = [
 ];
 
 export default function Departments() {
+  const { currentUser, canManageDepartments } = useCurrentUser();
+  const { toast } = useToast();
   const [departments, setDepartments] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
@@ -24,6 +28,7 @@ export default function Departments() {
   const [dupError, setDupError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [quickTask, setQuickTask] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", icon: "", head: "" });
 
   useEffect(() => {
@@ -32,7 +37,6 @@ export default function Departments() {
       base44.entities.Task.list(),
       base44.entities.TeamMember.list(),
     ]).then(async ([d, t, m]) => {
-      // Seed default departments if they don't exist
       const existingNames = d.map((x) => x.name.toLowerCase());
       const toCreate = DEFAULT_DEPARTMENTS.filter(
         (def) => !existingNames.includes(def.name.toLowerCase())
@@ -49,6 +53,18 @@ export default function Departments() {
     });
   }, []);
 
+  const submitApproval = async (action_type, payload) => {
+    const approval = await base44.entities.PendingApproval.create({
+      action_type,
+      initiated_by_email: currentUser.email,
+      initiated_by_name: currentUser.name,
+      payload,
+      status: "pending",
+    });
+    await base44.functions.invoke("sendApprovalRequest", { approval });
+    return approval;
+  };
+
   const handleAddDept = async () => {
     const isDuplicate = departments.some(
       (d) => d.name.toLowerCase() === form.name.trim().toLowerCase()
@@ -57,15 +73,23 @@ export default function Departments() {
       setDupError(`"${form.name}" already exists.`);
       return;
     }
-    const created = await base44.entities.Department.create(form);
-    setDepartments([created, ...departments]);
-    setShowAdd(false);
-    setForm({ name: "", icon: "", head: "" });
-    setDupError("");
+    setSubmitting(true);
+    try {
+      await submitApproval("ADD_DEPARTMENT", { ...form });
+      setShowAdd(false);
+      setForm({ name: "", icon: "", head: "" });
+      setDupError("");
+      toast({
+        title: "Request submitted",
+        description: "Another admin must approve before the department is created.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleQuickTask = async (data) => {
-    const created = await base44.entities.Task.create(data);
+    const created = await base44.entities.Task.create({ ...data, is_support_ticket: false });
     setTasks([created, ...tasks]);
   };
 
@@ -84,15 +108,23 @@ export default function Departments() {
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Departments</h1>
           <p className="text-sm text-muted-foreground mt-1">{departments.length} departments</p>
         </div>
-        <Button onClick={() => setShowAdd(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
-          <Plus className="h-4 w-4 mr-2" /> Add Department
-        </Button>
+        {canManageDepartments && (
+          <Button onClick={() => setShowAdd(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
+            <Plus className="h-4 w-4 mr-2" /> Add Department
+          </Button>
+        )}
       </div>
+
+      {!canManageDepartments && (
+        <div className="text-xs text-muted-foreground bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3">
+          Contact an admin to make changes to departments.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {departments.map((dept) => {
           const deptMembers = members.filter((m) => m.department === dept.name).length;
-          const deptTasks = tasks.filter((t) => t.department === dept.name);
+          const deptTasks = tasks.filter((t) => t.department === dept.name && !t.is_support_ticket);
           const openTasks = deptTasks.filter((t) => t.status !== "completed").length;
           const overdue = deptTasks.filter((t) => t.status !== "completed" && t.due_date && new Date(t.due_date) < new Date()).length;
 
@@ -138,38 +170,44 @@ export default function Departments() {
         })}
       </div>
 
-      {/* Add Department Modal */}
-      <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); setDupError(""); }}>
-        <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Add Department</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <Label className="text-muted-foreground text-xs">Name</Label>
-              <Input value={form.name} onChange={(e) => { setForm({...form, name: e.target.value}); setDupError(""); }}
-                className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
-              {dupError && <p className="text-xs text-red-400 mt-1">{dupError}</p>}
+      {/* Add Department Modal — admin only, maker-checker */}
+      {canManageDepartments && (
+        <Dialog open={showAdd} onOpenChange={(v) => { setShowAdd(v); setDupError(""); }}>
+          <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">Add Department</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mt-1">
+              This will create a pending approval request. Another admin must approve before the department is created.
+            </p>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label className="text-muted-foreground text-xs">Name</Label>
+                <Input value={form.name} onChange={(e) => { setForm({...form, name: e.target.value}); setDupError(""); }}
+                  className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+                {dupError && <p className="text-xs text-red-400 mt-1">{dupError}</p>}
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Icon (emoji)</Label>
+                <Input value={form.icon} onChange={(e) => setForm({...form, icon: e.target.value})} placeholder="e.g. 🎯"
+                  className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Department Head</Label>
+                <Input value={form.head} onChange={(e) => setForm({...form, head: e.target.value})}
+                  className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="ghost" onClick={() => setShowAdd(false)} className="text-muted-foreground">Cancel</Button>
+                <Button onClick={handleAddDept} disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  {submitting ? "Submitting..." : "Submit for Approval"}
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Icon (emoji)</Label>
-              <Input value={form.icon} onChange={(e) => setForm({...form, icon: e.target.value})} placeholder="e.g. 🎯"
-                className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Department Head</Label>
-              <Input value={form.head} onChange={(e) => setForm({...form, head: e.target.value})}
-                className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground" />
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setShowAdd(false)} className="text-muted-foreground">Cancel</Button>
-              <Button onClick={handleAddDept} className="bg-primary text-primary-foreground hover:bg-primary/90">Add Department</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Quick Add Task Modal */}
       <TaskEditModal
         open={!!quickTask}
         onClose={() => setQuickTask(null)}

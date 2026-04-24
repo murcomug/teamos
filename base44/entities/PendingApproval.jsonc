@@ -1,0 +1,62 @@
+{
+  "name": "PendingApproval",
+  "type": "object",
+  "properties": {
+    "action_type": {
+      "type": "string",
+      "title": "Action Type",
+      "enum": [
+        "ADD_TEAM_MEMBER",
+        "EDIT_TEAM_MEMBER",
+        "DEACTIVATE_TEAM_MEMBER",
+        "ADD_DEPARTMENT",
+        "EDIT_DEPARTMENT",
+        "DELETE_DEPARTMENT"
+      ]
+    },
+    "initiated_by_email": {
+      "type": "string",
+      "title": "Initiated By Email"
+    },
+    "initiated_by_name": {
+      "type": "string",
+      "title": "Initiated By Name"
+    },
+    "payload": {
+      "type": "object",
+      "title": "Payload"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "approved_by_email": {
+      "type": "string",
+      "title": "Approved By Email"
+    },
+    "approved_by_name": {
+      "type": "string",
+      "title": "Approved By Name"
+    },
+    "resolved_date": {
+      "type": "string",
+      "title": "Resolved Date"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "action_type",
+    "initiated_by_email",
+    "initiated_by_name",
+    "payload"
+  ]
+}

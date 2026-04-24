@@ -52,14 +52,6 @@
       "type": "boolean",
       "title": "Must Change Password",
       "default": true
-    },
-    "permissions": {
-      "type": "array",
-      "title": "Permissions",
-      "items": {
-        "type": "string"
-      },
-      "default": []
     }
   },
   "required": [
