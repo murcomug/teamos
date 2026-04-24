@@ -15,12 +15,17 @@ function formatDate(iso) {
   return iso ? iso.slice(0, 10) : '—';
 }
 
-function buildContextBlock(user, myOpenTasks, myOverdueTasks, openTickets, teamMembers, departments, recentActivity) {
+function buildContextBlock(assigneeName, displayName, role, department, email, myOpenTasks, myOverdueTasks, openTickets, teamMembers, departments, recentActivity) {
   const today = new Date().toISOString().slice(0, 10);
   let ctx = `LIVE CONTEXT — LOADED AT SESSION START\nToday's date: ${today}\n\n`;
 
   ctx += `CURRENT USER\n`;
-  ctx += `Name: ${user.full_name || '—'}\nRole: ${user.role || '—'}\nDepartment: ${user.department || '—'}\nEmail: ${user.email || '—'}\n\n`;
+  ctx += `Name: ${displayName}\n`;
+  ctx += `Role: ${role || '—'}\n`;
+  ctx += `Department: ${department || '—'}\n`;
+  ctx += `Email: ${email || '—'}\n`;
+  // CRITICAL: inject the exact assignee key so the agent knows what string is stored in Task.assignee
+  ctx += `Assignee Key (exact string stored in Task.assignee for this user): "${assigneeName}"\n\n`;
 
   ctx += `MY OPEN TASKS (${myOpenTasks.length} open)\n`;
   if (myOpenTasks.length === 0) {
@@ -86,11 +91,18 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { user_message, conversation_id } = body;
+    const { user_message, conversation_id, member_name, member_department } = body;
 
     if (!user_message?.trim()) {
       return Response.json({ error: 'user_message is required' }, { status: 400 });
     }
+
+    // CRITICAL: Use member_name (from TeamMember entity) as the assignee key.
+    // user.full_name comes from Base44 auth and may not match what's stored in Task.assignee.
+    // The frontend passes member_name from the memberSession (the exact TeamMember name string).
+    // Fall back to user.full_name only if member_name is not provided (e.g. pure Base44 admin).
+    const assigneeName = (member_name || user.full_name || '').trim();
+    const userDepartment = (member_department || user.department || '').trim();
 
     const isAdmin = user.role === 'admin';
     const permissions = user.permissions || [];
@@ -105,18 +117,18 @@ Deno.serve(async (req) => {
       // Existing conversation — just pass the message through
       conversation = await base44.agents.getConversation(conversation_id);
     } else {
-      // New conversation — fetch live context in parallel, then inject it
-      const userName = user.full_name || '';
+      // New conversation — fetch live context in parallel using the correct assigneeName
       const today = new Date().toISOString().slice(0, 10);
       const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
       const [myOpenTasks, myOverdueTasks, openTickets, teamMembers, departments, recentActivity] = await Promise.all([
+        // Filter by assigneeName — the exact string stored in Task.assignee
         base44.asServiceRole.entities.Task.filter(
-          { assignee: userName, status: { $in: ['pending', 'ongoing', 'stopped'] }, is_support_ticket: false },
+          { assignee: assigneeName, status: { $in: ['pending', 'ongoing', 'stopped'] }, is_support_ticket: false },
           'due_date', 10
         ).catch(() => []),
         base44.asServiceRole.entities.Task.filter(
-          { assignee: userName, due_date: { $lt: today }, status: { $nin: ['completed'] } },
+          { assignee: assigneeName, due_date: { $lt: today }, status: { $nin: ['completed'] } },
           'due_date', 5
         ).catch(() => []),
         base44.asServiceRole.entities.Task.filter(
@@ -131,18 +143,24 @@ Deno.serve(async (req) => {
         ).catch(() => []),
       ]);
 
-      const contextBlock = buildContextBlock(user, myOpenTasks, myOverdueTasks, openTickets, teamMembers, departments, recentActivity);
+      const contextBlock = buildContextBlock(
+        assigneeName,
+        user.full_name || assigneeName,
+        user.role,
+        userDepartment,
+        user.email,
+        myOpenTasks, myOverdueTasks, openTickets, teamMembers, departments, recentActivity
+      );
 
-      // Prepend context to the first user message
       messageContent = `[LIVE CONTEXT — use this for the session, do not repeat it back]\n\n${contextBlock}\n[END CONTEXT]\n\nUser message: ${user_message}`;
 
       conversation = await base44.agents.createConversation({
         agent_name: 'master_agent',
         metadata: {
           user_id: user.id,
-          user_name: user.full_name,
+          user_name: assigneeName,
           user_role: user.role,
-          user_department: user.department || '',
+          user_department: userDepartment,
           can_view_all_tasks: canViewAllTasks,
           can_view_all_reports: canViewAllReports,
           can_access_sales_erp: canAccessSalesERP,
@@ -159,7 +177,7 @@ Deno.serve(async (req) => {
     const allMessages = updatedConversation.messages || [];
     const newConvId = conversation.id;
 
-    // Apply permission scoping to task/CRM tool results
+    // Backend enforcement: scope task tool results by assigneeName for non-admin operators
     const scopedMessages = allMessages.map(msg => {
       if (!msg.tool_calls || msg.tool_calls.length === 0) return msg;
 
@@ -178,7 +196,7 @@ Deno.serve(async (req) => {
         if ((tcName.includes('task') || tcName.includes('_task')) && Array.isArray(results)) {
           if (!canViewAllTasks) {
             results = results.filter(t =>
-              t.assignee === user.full_name || t.department === user.department
+              t.assignee === assigneeName || t.department === userDepartment
             );
           }
           return { ...tc, results: JSON.stringify(results) };

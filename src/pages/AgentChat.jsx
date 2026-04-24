@@ -173,6 +173,10 @@ export default function AgentChat() {
     const result = await base44.functions.invoke('invokeAgent', {
       user_message: text,
       conversation_id: conversationId || undefined,
+      // Pass the exact TeamMember name so backend can filter Task.assignee correctly.
+      // currentUser.name comes from memberSession.name (the TeamMember entity name string).
+      member_name: currentUser?.name || undefined,
+      member_department: currentUser?.department || undefined,
     });
 
     const { conversation_id: newConvId, messages: agentMessages } = result.data;
