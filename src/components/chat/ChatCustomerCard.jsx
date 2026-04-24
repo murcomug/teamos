@@ -1,31 +1,42 @@
-const stageConfig = {
-  lead: { bg: "bg-blue-500/15", text: "text-blue-400", label: "Lead" },
-  qualified: { bg: "bg-purple-500/15", text: "text-purple-400", label: "Qualified" },
-  proposal: { bg: "bg-yellow-500/15", text: "text-yellow-400", label: "Proposal" },
-  "closed-won": { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Won" },
-  "closed-lost": { bg: "bg-red-500/15", text: "text-red-400", label: "Lost" },
-  onboarding: { bg: "bg-cyan-500/15", text: "text-cyan-400", label: "Onboarding" },
-  integrating: { bg: "bg-indigo-500/15", text: "text-indigo-400", label: "Integrating" },
-  testing: { bg: "bg-teal-500/15", text: "text-teal-400", label: "Testing" },
-  launched: { bg: "bg-emerald-500/25", text: "text-emerald-300", label: "Launched" },
-};
+import { STAGE_CONFIG, SUB_STAGE_CONFIG, PRODUCT_LABEL } from "@/lib/crmConfig";
 
 export default function ChatCustomerCard({ customer }) {
   if (!customer) return null;
-  const stage = stageConfig[customer.sales_stage] || stageConfig.lead;
+
+  // Support both new Customer entity (company_name, stage, sub_stage)
+  // and legacy CustomerProfile entity (name, company, sales_stage)
+  const displayName = customer.company_name || customer.name;
+  const displaySub = customer.point_of_contact || customer.company;
+  const stageCfg = STAGE_CONFIG[customer.stage];
+  const subCfg = SUB_STAGE_CONFIG[customer.sub_stage];
+
   return (
     <div className="glass-card rounded-xl p-3 mt-2 border border-white/[0.06]">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{customer.name}</p>
-          {customer.company && <p className="text-xs text-muted-foreground">{customer.company}</p>}
+          <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+          {displaySub && <p className="text-xs text-muted-foreground truncate">{displaySub}</p>}
           {customer.email && <p className="text-[11px] text-muted-foreground mt-0.5">✉ {customer.email}</p>}
           {customer.phone && <p className="text-[11px] text-muted-foreground">📞 {customer.phone}</p>}
-          {customer.assigned_sales_rep && <p className="text-[11px] text-muted-foreground">👤 {customer.assigned_sales_rep}</p>}
+          {customer.assigned_to && <p className="text-[11px] text-muted-foreground">👤 {customer.assigned_to}</p>}
+          {customer.products?.length > 0 && (
+            <p className="text-[11px] text-primary/80 mt-0.5">
+              {customer.products.map(p => PRODUCT_LABEL[p] || p).join(", ")}
+            </p>
+          )}
         </div>
-        <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${stage.bg} ${stage.text}`}>
-          {stage.label || customer.sales_stage || "lead"}
-        </span>
+        <div className="flex flex-col gap-1 flex-shrink-0 items-end">
+          {stageCfg && (
+            <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full ${stageCfg.bg} ${stageCfg.text}`}>
+              {stageCfg.label}
+            </span>
+          )}
+          {subCfg && (
+            <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full ${subCfg.bg} ${subCfg.text}`}>
+              {subCfg.label}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

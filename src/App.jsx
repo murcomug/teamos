@@ -22,6 +22,9 @@ import MemberLogin from './pages/MemberLogin';
 import SalesERP from './pages/SalesERP';
 import AgentManagement from './pages/AgentManagement';
 import Approvals from './pages/Approvals';
+import CRMList from './pages/CRMList';
+import CreateCustomer from './pages/CreateCustomer';
+import CustomerDetailPage from './pages/CustomerDetail';
 
 const AdminApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
@@ -53,6 +56,9 @@ const AdminApp = () => {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/completed-items" element={<CompletedItems />} />
               <Route path="/sales-erp" element={<SalesERP />} />
+              <Route path="/crm" element={<CRMList />} />
+              <Route path="/crm/new" element={<CreateCustomer />} />
+              <Route path="/crm/:id" element={<CustomerDetailPage />} />
               <Route path="/approvals" element={<Approvals />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />
@@ -79,6 +85,9 @@ const AdminApp = () => {
         <Route path="/activity-log" element={<ActivityLog />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/sales-erp" element={<SalesERP />} />
+        <Route path="/crm" element={<CRMList />} />
+        <Route path="/crm/new" element={<CreateCustomer />} />
+        <Route path="/crm/:id" element={<CustomerDetailPage />} />
         <Route path="/agent-management" element={<AgentManagement />} />
         <Route path="/approvals" element={<Approvals />} />
       </Route>

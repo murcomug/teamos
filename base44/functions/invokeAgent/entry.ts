@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
 
         // Block CRM data for non-CRM users
         if (!canAccessSalesERP && (
-          tcName.includes('customer') || tcName.includes('salesinteraction')
+          tcName.includes('customer') || tcName.includes('salesinteraction') || tcName.includes('customerprofile')
         )) {
           return { ...tc, results: JSON.stringify([]) };
         }

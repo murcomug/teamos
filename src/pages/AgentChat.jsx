@@ -95,7 +95,7 @@ export default function AgentChat() {
       base44.entities.TeamMember.list(),
       base44.entities.Department.list(),
       base44.entities.Task.list(),
-      base44.entities.CustomerProfile.list(),
+      base44.entities.Customer.list(),
       // Find today's session for this user
       currentUser?.id
         ? base44.entities.AgentConversation.filter({ user_id: currentUser.id, agent_name: 'master_agent', title: today })

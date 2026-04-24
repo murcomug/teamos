@@ -1,0 +1,94 @@
+{
+  "name": "Customer",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "title": "Company Name"
+    },
+    "point_of_contact": {
+      "type": "string",
+      "title": "Point of Contact"
+    },
+    "email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "phone": {
+      "type": "string",
+      "title": "Phone"
+    },
+    "website": {
+      "type": "string",
+      "title": "Website"
+    },
+    "products": {
+      "type": "array",
+      "title": "Products Interested In",
+      "items": {
+        "type": "string",
+        "enum": [
+          "virtual_accounts",
+          "usd_tt",
+          "collections_payouts",
+          "on_off_ramp",
+          "otc",
+          "whatsapp_agent"
+        ]
+      },
+      "default": []
+    },
+    "stage": {
+      "type": "string",
+      "title": "Stage",
+      "enum": [
+        "initial",
+        "after_sales"
+      ]
+    },
+    "sub_stage": {
+      "type": "string",
+      "title": "Sub-Stage",
+      "enum": [
+        "qualified",
+        "proposal",
+        "won",
+        "lost",
+        "onboarding",
+        "integrating",
+        "testing",
+        "launched"
+      ]
+    },
+    "other_details": {
+      "type": "string",
+      "title": "Other Details"
+    },
+    "assigned_to": {
+      "type": "string",
+      "title": "Assigned To"
+    },
+    "assigned_to_email": {
+      "type": "string",
+      "title": "Assigned To Email"
+    },
+    "created_by": {
+      "type": "string",
+      "title": "Created By"
+    },
+    "created_by_email": {
+      "type": "string",
+      "title": "Created By Email"
+    },
+    "last_activity_date": {
+      "type": "string",
+      "title": "Last Activity Date"
+    }
+  },
+  "required": [
+    "company_name",
+    "products",
+    "stage",
+    "sub_stage"
+  ]
+}

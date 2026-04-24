@@ -66,7 +66,7 @@ export default function Sidebar() {
       ]
     },
     { path: "/reports", icon: BarChart3, label: "Reports" },
-    { path: "/sales-erp", icon: Briefcase, label: "Sales CRM" },
+    { path: "/crm", icon: Briefcase, label: "CRM" },
     ...(canViewApprovals ? [{ path: "/approvals", icon: ShieldCheck, label: "Approvals", badge: pendingCount }] : []),
     ...(canManageAgents ? [{ path: "/agent-management", icon: Bot, label: "Agents" }] : []),
     ...(canManageSettings ? [{ path: "/settings", icon: Settings, label: "Settings" }] : []),
