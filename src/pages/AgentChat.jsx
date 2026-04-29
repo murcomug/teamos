@@ -309,18 +309,24 @@ export default function AgentChat() {
           </div>
         )}
 
-        {messages.map((msg, idx) => (
+        {messages.map((msg, idx) => {
+          // Strip injected context block from user messages before display
+          const displayContent = msg.role === "user"
+            ? (msg.content || "").replace(/^\[LIVE CONTEXT[^\]]*\][\s\S]*?\[END CONTEXT\]\s*User message:\s*/i, "").trim()
+            : msg.content;
+
+          return (
           <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] ${msg.role === "user" ? "ml-auto" : ""}`}>
-              {(msg.role === "user" || msg.content) && (
+              {(msg.role === "user" || displayContent) && (
                 <div className={`rounded-2xl px-4 py-3 ${
                   msg.role === "user" ? "bg-primary text-primary-foreground" : "glass-card"
                 }`}>
                   {msg.role === "user" ? (
-                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-sm">{displayContent}</p>
                   ) : (
                     <ReactMarkdown className="text-sm prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-foreground/90 prose-strong:text-foreground prose-li:text-foreground/90">
-                      {msg.content}
+                      {displayContent}
                     </ReactMarkdown>
                   )}
                 </div>
@@ -343,7 +349,8 @@ export default function AgentChat() {
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {loading && (
           <div className="flex justify-start">
