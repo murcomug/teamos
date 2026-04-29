@@ -97,12 +97,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'user_message is required' }, { status: 400 });
     }
 
-    // CRITICAL: Use member_name (from TeamMember entity) as the assignee key.
-    // user.full_name comes from Base44 auth and may not match what's stored in Task.assignee.
-    // The frontend passes member_name from the memberSession (the exact TeamMember name string).
-    // Fall back to user.full_name only if member_name is not provided (e.g. pure Base44 admin).
-    const assigneeName = (member_name || user.full_name || '').trim();
-    const userDepartment = (member_department || user.department || '').trim();
+    // Resolve the canonical assignee name — the exact string stored in Task.assignee.
+    // Priority: member_name (from operator session) → TeamMember lookup by email → user.full_name
+    let assigneeName = (member_name || '').trim();
+    let userDepartment = (member_department || '').trim();
+
+    if (!assigneeName && user.email) {
+      try {
+        const allMembers = await base44.asServiceRole.entities.TeamMember.list('name', 50);
+        const match = allMembers?.find(m => m.email?.toLowerCase() === user.email.toLowerCase());
+        if (match) {
+          assigneeName = match.name;
+          userDepartment = userDepartment || (match.department || '').trim();
+        }
+      } catch {}
+    }
+    if (!assigneeName) assigneeName = (user.full_name || '').trim();
 
     const isAdmin = user.role === 'admin';
     const permissions = user.permissions || [];
