@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil } from "lucide-react";
 import { PRODUCTS, STAGES, SUB_STAGES, isValidSubStage } from "@/lib/crmConfig";
+import NotesSection from "./NotesSection";
 
 export default function CustomerOverviewTab({ customer, members, onUpdate }) {
   const [editing, setEditing] = useState(false);
@@ -49,6 +50,7 @@ export default function CustomerOverviewTab({ customer, members, onUpdate }) {
           <p className="text-foreground text-sm mt-1 whitespace-pre-wrap">{customer.other_details}</p>
         </div>
       )}
+      <NotesSection notes={customer.notes} onSave={async (notes) => { await onUpdate({ notes }); }} />
     </div>
   );
 

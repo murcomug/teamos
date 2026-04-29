@@ -64,6 +64,10 @@
       "type": "string",
       "title": "Other Details"
     },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
     "assigned_to": {
       "type": "string",
       "title": "Assigned To"

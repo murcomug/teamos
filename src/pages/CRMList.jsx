@@ -156,12 +156,10 @@ export default function CRMList() {
             <div className="py-10 text-center text-sm text-muted-foreground">No customers found.</div>
           ) : filtered.map(c => (
             <div key={c.id}
-              className="flex items-center gap-3 py-3 px-4 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-colors min-w-[900px]">
+              onClick={() => navigate(`/crm/${c.id}`)}
+              className="flex items-center gap-3 py-3 px-4 border-b border-white/[0.03] last:border-0 hover:bg-white/[0.04] transition-colors min-w-[900px] cursor-pointer">
               <div className="flex-1 min-w-[180px]">
-                <button onClick={() => navigate(`/crm/${c.id}`)}
-                  className="text-sm font-semibold text-foreground hover:text-primary transition-colors text-left truncate max-w-[180px] block">
-                  {c.company_name}
-                </button>
+                <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">{c.company_name}</p>
                 {c.point_of_contact && <p className="text-xs text-muted-foreground truncate">{c.point_of_contact}</p>}
               </div>
               <div className="w-32 text-xs text-muted-foreground truncate">{c.point_of_contact || "—"}</div>
@@ -182,12 +180,7 @@ export default function CRMList() {
                   ? new Date(c.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                   : "—"}
               </div>
-              <div className="w-16 flex-shrink-0 flex gap-1">
-                <button onClick={() => navigate(`/crm/${c.id}`)}
-                  className="px-2 py-1 rounded text-[10px] font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                  View
-                </button>
-              </div>
+              <div className="w-16 flex-shrink-0" />
             </div>
           ))}
         </div>
