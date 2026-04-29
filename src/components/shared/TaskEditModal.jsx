@@ -53,7 +53,7 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="glass-card border-white/[0.08] bg-[#12121a] text-foreground max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-foreground">{task?.id ? "Task Details" : "New Task"}</DialogTitle>
+          <DialogTitle className="text-foreground">{task?.id ? "Support Ticket" : "New Task"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
