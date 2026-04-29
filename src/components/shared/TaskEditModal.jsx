@@ -130,28 +130,7 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
               disabled={readOnly}
               className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground disabled:opacity-60 disabled:cursor-not-allowed" />
           </div>
-          {task?.id === undefined || task?.is_support_ticket ? (
-            <div>
-              <Label className="text-muted-foreground text-xs">Customer (Support Tickets)</Label>
-              {customers.length > 0 ? (
-                <Select value={form.customer_id} onValueChange={(v) => setForm({...form, customer_id: v})} disabled={readOnly}>
-                  <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground disabled:opacity-60 disabled:cursor-not-allowed">
-                    <SelectValue placeholder="Select customer..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
-                    {customers.map(c => (
-                      <SelectItem key={c.id} value={c.id} className="text-foreground">{c.name}{c.company ? ` (${c.company})` : ""}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input value={form.customer_name} onChange={(e) => setForm({...form, customer_name: e.target.value})}
-                  placeholder="e.g., Acme Corp"
-                  disabled={readOnly}
-                  className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground disabled:opacity-60 disabled:cursor-not-allowed" />
-              )}
-            </div>
-          ) : null}
+
           <div>
             <BlockingTaskSelector
               allTasks={allTasks}
