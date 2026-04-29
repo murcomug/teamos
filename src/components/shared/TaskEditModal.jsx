@@ -4,14 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import BlockingTaskSelector from "../tasks/BlockingTaskSelector";
 import { AlertCircle } from "lucide-react";
 
-export default function TaskEditModal({ open, onClose, task, onSave, members = [], departments = [], allTasks = [], customers = [] }) {
+export default function TaskEditModal({ open, onClose, task, onSave, members = [], departments = [], allTasks = [] }) {
   const [form, setForm] = useState({
     title: "", description: "", status: "pending", priority: "medium",
     assignee: "", department: "", due_date: "", blocking_task_ids: [], customer_name: "", customer_id: ""
   });
+  const [customers, setCustomers] = useState([]);
+
+  useEffect(() => {
+    base44.entities.Customer.list().then(setCustomers);
+  }, []);
   const [blockingError, setBlockingError] = useState("");
   const [readOnly, setReadOnly] = useState(true);
 
@@ -123,6 +129,22 @@ export default function TaskEditModal({ open, onClose, task, onSave, members = [
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Customer</Label>
+            <Select value={form.customer_id} onValueChange={(v) => {
+              const c = customers.find(c => c.id === v);
+              setForm({ ...form, customer_id: v, customer_name: c?.company_name || "" });
+            }} disabled={readOnly}>
+              <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08] text-foreground disabled:opacity-60 disabled:cursor-not-allowed">
+                <SelectValue placeholder="Select customer..." />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1a24] border-white/[0.08]">
+                {customers.map(c => (
+                  <SelectItem key={c.id} value={c.id} className="text-foreground">{c.company_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label className="text-muted-foreground text-xs">Due Date</Label>
