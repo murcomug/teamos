@@ -5,6 +5,7 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskListRow from "../components/tasks/TaskListRow";
 import TaskEditModal from "../components/shared/TaskEditModal";
+import TicketCreateModal from "../components/tickets/TicketCreateModal";
 import TicketCloseModal from "../components/shared/TicketCloseModal";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 
@@ -21,6 +22,7 @@ export default function SupportTickets() {
   const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [closeTicket, setCloseTicket] = useState(null);
   const [completedTab, setCompletedTab] = useState("all");
@@ -123,10 +125,7 @@ export default function SupportTickets() {
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Support Tickets</h1>
           <p className="text-sm text-muted-foreground mt-1">{supportTickets.length} tickets</p>
         </div>
-        <Button onClick={() => {
-          const dueDate = new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0];
-          setEditTask({ due_date: dueDate });
-        }}
+        <Button onClick={() => setShowCreateModal(true)}
           className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
           <Plus className="h-4 w-4 mr-2" /> New Ticket
         </Button>
@@ -282,6 +281,15 @@ export default function SupportTickets() {
           </div>
         )}
       </div>
+
+      {/* Create Modal */}
+      <TicketCreateModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={handleSave}
+        members={members}
+        departments={departments}
+      />
 
       {/* Edit Modal */}
       <TaskEditModal
